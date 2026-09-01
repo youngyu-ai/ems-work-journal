@@ -209,8 +209,8 @@
   </div>
 
   <script>
-    // 這裡已經為您填好正確的網址與 Token！
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzCKYzqQJtrduCAQLEXtpB65Ti5dlNe1GtSjyV5CvG9gSDNkLHPV4Wjguia5KL1mVSyxA/exec';
+    // 您的 GAS API 與 Token (請確保與 GAS 後端一致)
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzeUt8SE2W7JYiG7W8xXwzVUlH6CCgyBd9N_uJvdUBuEr5R2cLIqJQcsouMFfn1ADqG/exec';
     const API_TOKEN = 'BALING_EMS_2026';
 
     let selectedTags = [];
@@ -236,7 +236,7 @@
           redirect: 'follow',
           body: JSON.stringify({ token: API_TOKEN, action: action, data: data })
         });
-        if (!response.ok) throw new Error('HTTP ' + response.status);
+        if (!response.ok) throw new Error('HTTP 錯誤代碼: ' + response.status);
         return await response.json();
       } catch (err) {
         console.error('API Error:', err);
@@ -302,11 +302,23 @@
       }).join('');
     }
 
+    /* 待辦事項 (已加上防呆與錯誤攔截機制) */
     async function loadTasks() {
       const container = document.getElementById('taskList');
       container.innerHTML = '<div style="color:#666; font-size:14px; text-align:center;">同步待辦事項中...</div>';
       try {
         const tasks = await callGasApi('getFireTasks');
+        
+        // 錯誤攔截：確認是否回傳了失敗訊息
+        if (tasks && tasks.success === false) {
+          throw new Error(tasks.message || '後端回傳失敗狀態');
+        }
+        
+        // 錯誤攔截：確認資料格式是否為陣列，防止 map is not a function
+        if (!Array.isArray(tasks)) {
+          throw new Error('伺服器回傳資料格式錯誤，預期為陣列。');
+        }
+
         if (!tasks || tasks.length === 0) {
           container.innerHTML = '<div style="color:#666; font-size:14px; text-align:center; padding:10px;">🎉 目前無未完成的消防待辦事項</div>';
           return;
@@ -322,7 +334,7 @@
           </div>
         `).join('');
       } catch(e) {
-        container.innerHTML = '<div style="color:#d93025; font-size:14px; text-align:center; padding:10px;">待辦載入失敗，請檢查 GAS 是否發布新版本</div>';
+        container.innerHTML = `<div style="color:#d93025; font-size:14px; text-align:center; padding:10px; line-height: 1.5;">待辦載入失敗：<br>${escapeHtml(e.message)}<br><span style="font-size:12px; color:#666;">(請確認 GAS 後端已建立新版本，且程式碼完整)</span></div>`;
       }
     }
 
@@ -502,6 +514,7 @@
       document.getElementById('searchResults').innerHTML = '';
     }
 
+    /* 搜尋日誌 (已加上防呆與錯誤攔截機制) */
     async function performSearch() {
       const query = document.getElementById('searchKey').value.trim();
       const startDate = document.getElementById('searchStartDate').value;
@@ -518,11 +531,22 @@
       try {
         const results = await callGasApi('searchHistory', { query: query, startDate: startDate, endDate: endDate });
         
+        // 錯誤攔截：確認是否回傳了失敗訊息
+        if (results && results.success === false) {
+          throw new Error(results.message || '後端回傳失敗狀態');
+        }
+        
+        // 錯誤攔截：確認資料格式是否為陣列，防止 map is not a function
+        if (!Array.isArray(results)) {
+          throw new Error('伺服器回傳資料格式錯誤，預期為陣列。');
+        }
+
         if (!results || results.length === 0) {
           container.innerHTML = '<div style="color:#666; text-align:center; padding:16px;">查無符合條件之紀錄</div>';
           return;
         }
 
+        // 後端可能會傳回一行錯誤文字放在陣列第一格
         if (results.length === 1 && results[0].lines && results[0].lines.length === 1 && results[0].lines[0].indexOf('搜尋失敗：') === 0) {
           container.innerHTML = '<div style="color:#d93025; text-align:center; padding:16px;">' + escapeHtml(results[0].lines[0]) + '</div>';
           return;
@@ -559,7 +583,7 @@
         window.latestSearchResults = results;
 
       } catch (error) {
-        container.innerHTML = '<div style="color:#d93025; text-align:center; padding:16px;">搜尋失敗：' + escapeHtml(error.message) + '</div>';
+        container.innerHTML = `<div style="color:#d93025; text-align:center; padding:16px; line-height: 1.5;">搜尋失敗：<br>${escapeHtml(error.message)}</div>`;
       }
     }
 
