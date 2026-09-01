@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>救護業務日誌</title>
 
-  <!-- 完整的 CSS 樣式，確保介面正常顯示 -->
   <style>
     :root { --primary:#6f7566; --primary-dark:#59604f; --success:#7b856c; --warning:#b18a62; --danger:#a7655c; --bg:#f4f1e9; --card-bg:#fbfaf6; --text:#3f433b; --muted:#777a70; --border:#dedbd1; --ems-red:#b33b32; --ems-orange:#d4864b; }
     * { box-sizing:border-box; font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif; }
@@ -210,9 +209,7 @@
   </div>
 
   <script>
-    // =========================================
-    // 【重要】請將下方這串網址替換成您的 GAS 網頁應用程式網址！
-    // =========================================
+    // 這裡已經為您填好正確的網址與 Token！
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzeUt8SE2W7JYiG7W8xXwzVUlH6CCgyBd9N_uJvdUBuEr5R2cLIqJQcsouMFfn1ADqG/exec';
     const API_TOKEN = 'BALING_EMS_2026';
 
@@ -231,9 +228,6 @@
 
     document.getElementById('followupModal').addEventListener('click', function(e){ if(e.target===this) closeFollowupModal(); });
 
-    // =========================================
-    // 核心 API 呼叫函數 (取代 google.script.run)
-    // =========================================
     async function callGasApi(action, data = {}) {
       try {
         const response = await fetch(GAS_API_URL, {
@@ -274,7 +268,6 @@
       }
     }
 
-    /* 多檔案選取與清單管理 */
     function handleFilesSelected(files) {
       if (!files || files.length === 0) return;
       for (let i = 0; i < files.length; i++) {
@@ -309,7 +302,6 @@
       }).join('');
     }
 
-    /* 待辦事項 */
     async function loadTasks() {
       const container = document.getElementById('taskList');
       container.innerHTML = '<div style="color:#666; font-size:14px; text-align:center;">同步待辦事項中...</div>';
@@ -330,7 +322,7 @@
           </div>
         `).join('');
       } catch(e) {
-        container.innerHTML = '<div style="color:#d93025; font-size:14px; text-align:center; padding:10px;">待辦載入失敗，請檢查 API 設定與網路</div>';
+        container.innerHTML = '<div style="color:#d93025; font-size:14px; text-align:center; padding:10px;">待辦載入失敗，請檢查 GAS 是否發布新版本</div>';
       }
     }
 
@@ -381,7 +373,6 @@
       if (text) document.getElementById('progressStatus').innerText = text;
     }
 
-    /* 40MB+ 大檔案分塊上傳與發布 */
     async function submitMemo() {
       const title = document.getElementById('title').value.trim();
       const content = document.getElementById('content').value.trim();
@@ -504,7 +495,6 @@
       });
     }
 
-    /* 搜尋日誌（支援關鍵字、日期範圍過濾與開啟附件按鈕） */
     function clearSearchFilter() {
       document.getElementById('searchKey').value = '';
       document.getElementById('searchStartDate').value = '';
@@ -654,7 +644,6 @@
       } catch(err) { modal.style.display='none'; alert('追加失敗：'+(err&&err.message?err.message:err)); }
     }
 
-    // 搜尋結果輸出前進行 HTML Escape
     function escapeHtml(value) {
       return String(value == null ? '' : value)
         .replace(/&/g, '&amp;')
