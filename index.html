@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <title>救護業務日誌</title>
+  
+  <!-- PWA 必備：連結 manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#b33b32">
+
+  <style>
+    /* 請貼上您原本 Index.html 的所有 <style> 內容 */
+    /* 並在最下方補上離線佇列的 CSS： */
+    .offline-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 5px; border-bottom: 1px dashed #d5d1c5; }
+    .offline-item:last-child { border-bottom: none; }
+    .offline-info { flex: 1; overflow: hidden; }
+    .offline-title { font-size: 15px; font-weight: 600; color: #4b5145; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .offline-meta { font-size: 12px; color: #8a8d84; margin-top: 4px; display: flex; gap: 8px; }
+    .btn-offline-del { background: transparent; border: 1px solid #a7655c; color: #a7655c; border-radius: 3px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 離線狀態橫幅 -->
+    <div id="offlineBanner" style="display: none; background: #b33b32; color: white; text-align: center; padding: 8px; font-size: 14px; font-weight: bold; border-radius: 4px; margin-bottom: 15px;">
+      ⚠️ 目前處於離線狀態，資料將安全暫存於本機。
+    </div>
+
+    <div class="header">
+      <h1>救護業務日誌</h1>
+      <p>業務備忘錄與消防待辦管理</p>
+    </div>
+
+    <!-- 首頁區域 -->
+    <div id="homeView">
+      <div class="home-menu">
+        <!-- 原有的三個按鈕 -->
+        <button class="btn-main btn-memo" onclick="showSection('memo')"><span>📝</span><span>1. 新增備忘</span></button>
+        <button class="btn-main btn-task" onclick="showSection('task')"><span>☑️</span><span>2. 新增待辦</span></button>
+        <button class="btn-main btn-search" onclick="showSection('search')"><span>🔍</span><span>3. 搜尋日誌</span></button>
+      </div>
+
+      <!-- 離線待傳佇列 (預設隱藏) -->
+      <div class="task-section" id="offlineQueueSection" style="display: none; border-color: #b18a62; margin-bottom: 22px;">
+        <div class="task-header" style="border-bottom-color: #b18a62;">
+          <h3 style="color: #b18a62;">📶 離線待傳佇列</h3>
+          <span style="font-size: 13px; color: #b18a62; cursor: pointer; font-weight: 600;" onclick="syncOfflineMemos()">🔄 手動上傳</span>
+        </div>
+        <div id="offlineQueueList">載入中...</div>
+      </div>
+
+      <!-- 待辦事項區塊 (請貼上原來的 HTML) -->
+      <div class="task-section">
+        <div class="task-header"><h3>📋 待辦事項 (消防)</h3></div>
+        <div id="taskList"></div>
+      </div>
+    </div>
+
+    <!-- 新增備忘錄、新增待辦、搜尋日誌區塊，請貼上原有的 <div id="section-memo"> 等程式碼 -->
+    <!-- ... 省略 HTML 結構以節省版面 ... -->
+
+  <!-- 進度條彈窗，請貼上原有的進度條 HTML -->
+  <div id="progressModal" class="progress-overlay"><div class="progress-card">...</div></div>
+
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. API 與 全局變數設定
+    // ==========================================
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzeUt8SE2W7JYiG7W8xXwzVUlH6CCgyBd9N_uJvdUBuEr5R2cLIqJQcsouMFfn1ADqG/exec';
+    const API_TOKEN = 'BALING_EMS_2026'; // 必須與後端一致
+    let stagedFiles = [];
+    let selectedTags = [];
+
+    // ==========================================
+    // 2. 網路狀態與 PWA 註冊
+    // ==========================================
+    window.addEventListener('online', () => { updateNetworkStatus(); syncOfflineMemos(); });
+    window.addEventListener('offline', updateNetworkStatus);
+    
+    function updateNetworkStatus() {
+      document.getElementById('offlineBanner').style.display = navigator.onLine ? 'none' : 'block';
+    }
+
+    window.onload = function() {
+      updateNetworkStatus();
+      loadTasks();
+      loadOfflineQueue();
+      // 註冊 Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(() => console.log('SW 註冊成功'));
+      }
+    };
+
+    // ==========================================
+    // 3. API 呼叫封裝 (解決 CORS 關鍵)
+    // ==========================================
+    async function callGasApi(action, data = {}) {
+      const response = await fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 欺騙瀏覽器跳過 OPTIONS
+        redirect: 'follow', // 必須 follow GAS 的 302 跳轉
+        body: JSON.stringify({ token: API_TOKEN, action, data })
+      });
+      if (!response.ok) throw new Error('HTTP 錯誤: ' + response.status);
+      return await response.json();
+    }
+
+    // ==========================================
+    // 4. IndexedDB 封裝 (處理離線大檔案)
+    // ==========================================
+    function openEmsDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('EmsDB', 1);
+        req.onupgradeneeded = (e) => {
+          if (!e.target.result.objectStoreNames.contains('offline_memos')) {
+            e.target.result.createObjectStore('offline_memos', { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+    
+    async function saveMemoToDB(memo) {
+      const db = await openEmsDB();
+      return new Promise((res, rej) => {
+        const tx = db.transaction('offline_memos', 'readwrite');
+        tx.objectStore('offline_memos').put(memo);
+        tx.oncomplete = res; tx.onerror = (e) => rej(e.target.error);
+      });
+    }
+    
+    async function getAllOfflineMemos() {
+      const db = await openEmsDB();
+      return new Promise((res, rej) => {
+        const tx = db.transaction('offline_memos', 'readonly');
+        const req = tx.objectStore('offline_memos').getAll();
+        req.onsuccess = () => res(req.result); req.onerror = (e) => rej(e.target.error);
+      });
+    }
+    
+    async function deleteOfflineMemo(id) {
+      const db = await openEmsDB();
+      return new Promise((res, rej) => {
+        const tx = db.transaction('offline_memos', 'readwrite');
+        tx.objectStore('offline_memos').delete(id);
+        tx.oncomplete = res; tx.onerror = (e) => rej(e.target.error);
+      });
+    }
+
+    // ==========================================
+    // 5. 離線佇列 UI 渲染
+    // ==========================================
+    async function loadOfflineQueue() {
+      const memos = await getAllOfflineMemos();
+      const section = document.getElementById('offlineQueueSection');
+      if (!memos || memos.length === 0) {
+        section.style.display = 'none'; return;
+      }
+      section.style.display = 'block';
+      document.getElementById('offlineQueueList').innerHTML = memos.map(m => `
+        <div class="offline-item">
+          <div class="offline-info">
+            <div class="offline-title">${m.title}</div>
+            <div class="offline-meta"><span>📅 ${m.date}</span><span>📎 ${m.files.length} 附件</span></div>
+          </div>
+          <button class="btn-offline-del" onclick="deleteOfflineQueueItem('${m.id}')">刪除</button>
+        </div>
+      `).join('');
+    }
+
+    async function deleteOfflineQueueItem(id) {
+      if(confirm('確定要刪除這筆暫存紀錄與附件嗎？')) {
+        await deleteOfflineMemo(id); loadOfflineQueue();
+      }
+    }
+
+    // ==========================================
+    // 6. 核心業務邏輯：送出與背景上傳
+    // ==========================================
+    async function submitMemo() {
+      // 取得表單值... (省略 DOM 取值邏輯，與原本相同)
+      const title = document.getElementById('title').value; // 請補齊
+      const content = document.getElementById('content').value;
+      const date = document.getElementById('eventDate').value;
+
+      // 【離線攔截】
+      if (!navigator.onLine) {
+        await saveMemoToDB({
+          id: 'memo_' + Date.now(), title, content, date, tags: selectedTags,
+          files: stagedFiles.map(i => i.file) // 存入原生 File 物件
+        });
+        alert('📡 處於離線狀態：日誌已暫存，網路恢復將自動發布。');
+        goHome(); loadOfflineQueue(); return;
+      }
+
+      // 【線上正常上傳】(請貼回您原本的分塊與呼叫邏輯，但將 google.script.run 替換為 callGasApi)
+      // 例如： await callGasApi('saveMemoDoc', { ... });
+    }
+
+    async function syncOfflineMemos() {
+      if(!navigator.onLine) return;
+      const memos = await getAllOfflineMemos();
+      if(memos.length === 0) return;
+      
+      let successCount = 0;
+      for (let memo of memos) {
+        try {
+          // 實作上傳邏輯 (將 memo.files 轉 base64，切塊呼叫 callGasApi('saveFileChunk') 等...)
+          // 上傳完畢後：
+          await callGasApi('saveMemoDoc', memo);
+          await deleteOfflineMemo(memo.id);
+          successCount++;
+        } catch (e) { console.error('背景上傳失敗', e); }
+      }
+      if(successCount > 0) { alert('✅ 成功補登離線日誌！'); loadOfflineQueue(); loadTasks(); }
+    }
+
+    // 載入待辦範例 (改用 fetch)
+    async function loadTasks() {
+      document.getElementById('taskList').innerHTML = '載入中...';
+      try {
+        const tasks = await callGasApi('getFireTasks');
+        // ... 渲染 HTML ...
+      } catch (e) { document.getElementById('taskList').innerHTML = '連線失敗'; }
+    }
+
+    // 其它 UI 切換與輔助函式 (goHome, showSection 等請貼回原代碼)
+  </script>
+</body>
+</html>

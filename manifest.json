@@ -1,0 +1,16 @@
+{
+  "name": "巴陵救護業務日誌",
+  "short_name": "救護日誌",
+  "description": "救護備忘錄與消防待辦管理",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f1e9",
+  "theme_color": "#b33b32",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2966/2966327.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
