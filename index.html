@@ -1,311 +1,615 @@
-const DOC_ID = '1Sq0RfHMG_--CMUOeVyqFNkdfpQMiqQuk6mseVYb3kYU';
-const WAREHOUSE_FOLDER_ID = '1IrDHZdYBUKQIfc2ZkW2cnFaphL-QXsGD';
-const API_TOKEN = 'BALING_EMS_2026';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>救護業務日誌</title>
 
-function doGet(e) {
-  return ContentService.createTextOutput(JSON.stringify({ status: 'API is running' })).setMimeType(ContentService.MimeType.JSON);
-}
+  <style>
+    :root { --primary:#6f7566; --primary-dark:#59604f; --success:#7b856c; --warning:#b18a62; --danger:#a7655c; --bg:#f4f1e9; --card-bg:#fbfaf6; --text:#3f433b; --muted:#777a70; --border:#dedbd1; --ems-red:#b33b32; --ems-orange:#d4864b; }
+    * { box-sizing:border-box; font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif; }
+    body { margin:0; padding:28px 16px; background:radial-gradient(circle at 15% 10%,rgba(255,255,255,.8),transparent 28%),var(--bg); color:var(--text); display:flex; justify-content:center; letter-spacing:.02em; }
+    .container { width:100%; max-width:680px; }
+    .header { text-align:left; margin-bottom:22px; padding:18px 20px; border-left:5px solid var(--ems-red); background:rgba(251,250,246,.72); }
+    .header h1 { font-size:24px; margin:0 0 5px; color:#4b5145; letter-spacing:.08em; } .header p { margin:0; font-size:13px; color:var(--muted); }
+    .home-menu { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:22px; }
+    .btn-main { min-height:92px; padding:14px 8px; font-size:14px; font-weight:600; border:1px solid var(--border); border-radius:4px; cursor:pointer; color:#41463d; transition:.12s; text-align:center; box-shadow:0 2px 6px rgba(61,57,47,.06); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; background:var(--card-bg); }
+    .btn-main:hover { box-shadow:0 4px 12px rgba(61,57,47,.1); transform:translateY(-1px); } .btn-main:active{transform:scale(.98)} .btn-memo{border-top:3px solid var(--ems-red)} .btn-task{border-top:3px solid var(--ems-orange)} .btn-search{border-top:3px solid var(--primary)}
+    .task-section,.card { background:rgba(251,250,246,.96); border-radius:4px; padding:20px; box-shadow:0 2px 10px rgba(61,57,47,.055); border:1px solid var(--border); }
+    .task-header,.card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+    .task-header h3,.card-title { color:#4c5148; } .task-header h3{margin:0;font-size:16px;display:flex;align-items:center;gap:7px}.card-header{margin-bottom:18px}.card-title{font-size:18px;font-weight:700;margin:0}.btn-back{background:transparent;border:1px solid var(--border);color:#656b5d;font-size:13px;cursor:pointer;font-weight:600;border-radius:3px;padding:7px 11px}
+    .task-item{display:flex;align-items:flex-start;gap:12px;padding:13px 5px;border-bottom:1px solid #e9e6de;transition:.3s}.task-item.fade-out{opacity:0;transform:translateX(20px);pointer-events:none}.task-checkbox{width:19px;height:19px;margin-top:2px;cursor:pointer;accent-color:var(--ems-red)}.task-content{flex:1;font-size:15px}.task-title{font-weight:600}.task-notes{font-size:13px;color:var(--muted);margin-top:3px}.task-due{font-size:12px;color:var(--ems-red);margin-top:3px}
+    .card{display:none} label{display:block;font-size:13px;font-weight:700;color:#555a50;margin-top:15px;margin-bottom:5px} input[type=text],input[type=datetime-local],input[type=date],textarea{width:100%;padding:11px 12px;border:1px solid #d7d4ca;border-radius:3px;font-size:15px;background:#fffefb;color:var(--text);outline:none} input:focus,textarea:focus{border-color:#9ba18f;box-shadow:0 0 0 2px rgba(111,117,102,.1)} textarea{resize:vertical}
+    .tag-group{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}.tag-chip{padding:7px 12px;background:#eeece4;color:#62685a;border:1px solid #ddd9ce;border-radius:3px;font-size:13px;cursor:pointer;font-weight:500;user-select:none}.tag-chip.active{background:#727a68;border-color:#727a68;color:#fff}
+    .file-actions{display:flex;gap:10px;margin-top:8px}.btn-file-add{flex:1;padding:11px;background:#f1efe7;color:#666c5e;border:1px dashed #bdb9ad;border-radius:3px;font-size:14px;font-weight:600;cursor:pointer;text-align:center}.file-list{margin-top:10px;display:flex;flex-direction:column;gap:7px}.file-chip{display:flex;align-items:center;justify-content:space-between;background:#f1efe8;padding:9px 11px;border:1px solid #e1ded4;border-radius:3px;font-size:13px}.file-chip-info{display:flex;align-items:center;gap:8px;overflow:hidden}.file-name{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}.file-badge{font-size:11px;padding:2px 6px;border-radius:2px;background:#dedbd2;color:#666}.file-badge.large{background:#f1dcd7;color:var(--ems-red);font-weight:bold}.btn-file-del{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:4px 8px}
+    .submit-btn{width:100%;padding:13px;background:var(--primary-dark);color:#fff;border:none;border-radius:3px;font-size:15px;margin-top:20px;font-weight:700;cursor:pointer;letter-spacing:.04em}.submit-btn:hover{filter:brightness(.96)}
+    .progress-overlay{position:fixed;inset:0;background:rgba(48,48,43,.42);display:none;align-items:center;justify-content:center;z-index:999}.progress-card{background:var(--card-bg);padding:24px;border:1px solid var(--border);border-radius:4px;width:90%;max-width:380px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,.12)}.progress-title{font-size:16px;font-weight:bold;color:#4a4f46;margin-bottom:12px}.progress-track{width:100%;height:10px;background:#e3e0d7;border-radius:2px;overflow:hidden;margin-bottom:8px}.progress-bar{height:100%;width:0;background:var(--ems-red);transition:width .2s}.progress-percent{font-size:14px;color:var(--muted);font-weight:600}
+    .result-item{background:#fffefb;border-left:3px solid var(--ems-red);padding:14px;margin-top:12px;border-radius:2px;font-size:14px;line-height:1.65;box-shadow:0 1px 4px rgba(61,57,47,.05);border:1px solid #e8e5dc}.search-file-btn{display:inline-flex;align-items:center;gap:8px;background:#f0eee6;color:#656b5d;padding:8px 12px;border-radius:3px;text-decoration:none;font-size:13px;font-weight:600;border:1px solid #d9d6cc;margin-top:4px}.search-file-btn:active{background:#e5e2d9}
 
-function doPost(e) {
-  try {
-    // 【關鍵修改】：支援接收前端的 URL Encoded 表單格式，100% 避開 CORS 阻擋
-    let payload;
-    if (e.parameter && e.parameter.data) {
-      payload = JSON.parse(e.parameter.data);
-    } else if (e.postData && e.postData.contents) {
-      payload = JSON.parse(e.postData.contents);
-    } else {
-      throw new Error('未接收到有效資料');
-    }
+    .followup-overlay{position:fixed;inset:0;background:rgba(36,38,34,.48);display:none;align-items:center;justify-content:center;z-index:1200;padding:16px}
+    .followup-card{width:100%;max-width:620px;max-height:92vh;overflow:auto;background:#faf9f5;border:1px solid #d8d5cb;box-shadow:0 18px 50px rgba(35,36,32,.18);border-radius:6px}
+    .followup-head{padding:20px 22px 15px;border-bottom:1px solid #ddd9cf;position:sticky;top:0;background:#faf9f5;z-index:2}
+    .followup-kicker{font-size:11px;letter-spacing:.16em;color:#687269;text-transform:uppercase;margin-bottom:6px}
+    .followup-title{font-size:20px;font-weight:700;margin:0;color:#30362f;line-height:1.45}
+    .followup-ref{margin-top:10px;padding:10px 12px;background:#f0eee7;border-left:3px solid var(--ems-red);font-size:12px;color:#656b62;line-height:1.7}
+    .followup-body{padding:18px 22px 22px}.followup-body textarea{min-height:150px}.followup-actions{display:flex;gap:9px;margin-top:18px}
+    .btn-secondary{flex:1;padding:12px;background:#eeeae1;border:1px solid #d8d4ca;color:#4f554c;border-radius:3px;font-weight:700;cursor:pointer}
+    .btn-followup-submit{flex:2;padding:12px;background:var(--primary-dark);color:#fff;border:0;border-radius:3px;font-weight:700;cursor:pointer}
+    .result-meta{font-size:11px;letter-spacing:.08em;color:#8a8d84;margin-bottom:8px}.followup-trigger{margin-top:12px;padding:8px 12px;border:1px solid #cfcac0;background:#f5f2eb;color:#4e5a50;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer}.followup-trigger:hover{background:#ebe7de}
+    .followup-file-note{font-size:11px;color:#777a70;margin-top:7px;line-height:1.6}.followup-empty{padding:12px;background:#f0eee7;border:1px dashed #d3cfc4;color:#777a70;font-size:13px}
+    @media(max-width:520px){.followup-card{max-height:95vh}.followup-head,.followup-body{padding-left:16px;padding-right:16px}.followup-actions{flex-direction:column}.btn-secondary,.btn-followup-submit{flex:auto}}
 
-    if (payload.token !== API_TOKEN) {
-      return responseJson({ success: false, message: '未授權的請求' });
-    }
+    @media(max-width:520px){body{padding:18px 11px}.home-menu{gap:7px}.btn-main{min-height:82px;font-size:13px}.task-section,.card{padding:16px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>救護業務日誌</h1>
+      <p>業務備忘錄與消防待辦管理</p>
+    </div>
 
-    const action = payload.action;
-    const data = payload.data || {};
-    let result = {};
+    <!-- 首頁區域 -->
+    <div id="homeView">
+      <div class="home-menu">
+        <button class="btn-main btn-memo" onclick="showSection('memo')">
+          <span style="font-size: 20px;">📝</span>
+          <span>1. 新增備忘</span>
+        </button>
+        <button class="btn-main btn-task" onclick="showSection('task')">
+          <span style="font-size: 20px;">☑️</span>
+          <span>2. 新增待辦</span>
+        </button>
+        <button class="btn-main btn-search" onclick="showSection('search')">
+          <span style="font-size: 20px;">🔍</span>
+          <span>3. 搜尋日誌</span>
+        </button>
+      </div>
 
-    switch (action) {
-      case 'getFireTasks': result = getFireTasks(); break;
-      case 'completeFireTask': result = completeFireTask(data.taskId); break;
-      case 'addFireTask': result = addFireTask(data); break;
-      case 'saveFileDirect': result = saveFileDirect(data); break;
-      case 'saveFileChunk': result = saveFileChunk(data); break;
-      case 'saveMemoDoc': result = saveMemoDoc(data); break;
-      case 'searchHistory': result = searchHistory(data); break;
-      case 'appendFollowUpToHistory': result = appendFollowUpToHistory(data); break;
-      default: result = { success: false, message: '未知的動作' };
-    }
-    return responseJson(result);
-  } catch (error) {
-    return responseJson({ success: false, message: '後端發生異常：' + error.toString() });
-  }
-}
+      <!-- 未完成待辦清單 -->
+      <div class="task-section">
+        <div class="task-header">
+          <h3>📋 待辦事項 (消防)</h3>
+          <span style="font-size: 12px; color: #1a73e8; cursor: pointer;" onclick="loadTasks()">🔄 重新整理</span>
+        </div>
+        <div id="taskList">載入待辦事項中...</div>
+      </div>
+    </div>
 
-function responseJson(data) {
-  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
-}
+    <!-- 1. 新增備忘錄區塊 -->
+    <div id="section-memo" class="card">
+      <div class="card-header">
+        <h3 class="card-title">新增日誌備忘</h3>
+        <button class="btn-back" onclick="goHome()">回首頁</button>
+      </div>
 
-// =======================================================
-// 下方皆為原始業務邏輯函式
-// =======================================================
-function authorizeApp() {
-  const testList = getFireTasks();
-  Logger.log('授權完成！目前待辦筆數：' + testList.length);
-}
-function getOrCreateYearFolder(year) {
-  const warehouseFolder = DriveApp.getFolderById(WAREHOUSE_FOLDER_ID);
-  const subFolders = warehouseFolder.getFoldersByName(String(year));
-  if (subFolders.hasNext()) return subFolders.next();
-  return warehouseFolder.createFolder(String(year));
-}
-function extractDateString(text) {
-  if (!text) return '';
-  const value = String(text);
-  const m1 = value.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if (m1) return m1[1] + '-' + ('0' + m1[2]).slice(-2) + '-' + ('0' + m1[3]).slice(-2);
-  const m2 = value.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-  if (m2) return m2[1] + '-' + ('0' + m2[2]).slice(-2) + '-' + ('0' + m2[3]).slice(-2);
-  return '';
-}
-function normalizeSearchDate(dateText) {
-  if (!dateText) return '';
-  const value = String(dateText).trim();
-  const m = value.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-  if (!m) return '';
-  return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
-}
-function saveFileDirect(data) {
-  try {
-    const targetFolder = getOrCreateYearFolder(data.year);
-    let base64 = data.fileData;
-    if (base64.indexOf(',') > -1) base64 = base64.substring(base64.indexOf(',') + 1);
-    const decoded = Utilities.base64Decode(base64);
-    const isImage = data.fileType && data.fileType.startsWith('image/');
-    const isLarge = decoded.length > 7 * 1024 * 1024 || !isImage;
-    const savedName = buildUploadedFileName(data.fileName);
-    const file = targetFolder.createFile(Utilities.newBlob(decoded, data.fileType || 'application/octet-stream', savedName));
-    return { success:true, url:file.getUrl(), name:savedName, isLarge:isLarge, isImage:isImage };
-  } catch (e) { return { success:false, message:e.toString() }; }
-}
-function saveFileChunk(data) {
-  try {
-    const targetFolder = getOrCreateYearFolder(data.year);
-    let base64 = data.base64Chunk;
-    if (base64.indexOf(',') > -1) base64 = base64.substring(base64.indexOf(',') + 1);
-    const chunkBytes = Utilities.base64Decode(base64);
-    const chunkFileName = '_chk_' + data.uploadId + '_' + data.chunkIndex;
-    targetFolder.createFile(Utilities.newBlob(chunkBytes, 'application/octet-stream', chunkFileName));
+      <label>發布日期與時間：</label>
+      <input type="datetime-local" id="eventDate">
 
-    if (data.chunkIndex === data.totalChunks - 1) {
-      const combinedBytes = [];
-      for (let i = 0; i < data.totalChunks; i++) {
-        const cName = '_chk_' + data.uploadId + '_' + i;
-        const cFiles = targetFolder.getFilesByName(cName);
-        if (!cFiles.hasNext()) throw new Error('找不到分塊檔案：' + cName);
-        const cf = cFiles.next();
-        const b = cf.getBlob().getBytes();
-        for (let k = 0; k < b.length; k++) combinedBytes.push(b[k]);
-        cf.setTrashed(true);
+      <label>標題：</label>
+      <input type="text" id="title" placeholder="例如：到院前啟動輸血計畫、AED定期檢查">
+
+      <label>快捷標籤（可多選）：</label>
+      <div class="tag-group">
+        <span class="tag-chip" onclick="toggleTag(this, '完成事項')">完成事項</span>
+        <span class="tag-chip" onclick="toggleTag(this, '器材')">器材</span>
+        <span class="tag-chip" onclick="toggleTag(this, '耗材')">耗材</span>
+        <span class="tag-chip" onclick="toggleTag(this, '交辦事項')">交辦事項</span>
+        <span class="tag-chip" onclick="toggleTag(this, '公文')">公文</span>
+        <span class="tag-chip" onclick="toggleTag(this, 'SOP')">SOP</span>
+        <span class="tag-chip" onclick="toggleTag(this, '案例教育')">案例教育</span>
+      </div>
+
+      <label style="margin-top: 10px; font-weight: normal; font-size: 13px; color: #5f6368;">或手動輸入自訂標籤（多個標籤請用空格或逗號分開）：</label>
+      <input type="text" id="customTags" placeholder="例如：教育訓練 品管 骨針">
+
+      <label>內容說明：</label>
+      <textarea id="content" rows="3" placeholder="輸入事項細節..."></textarea>
+
+      <!-- 多檔案選取 -->
+      <label>附加檔案 / 簡報 / PDF / 影片（可多選）：</label>
+      <div class="file-actions">
+        <input type="file" id="filePicker" multiple accept="*/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,image/*,video/*" style="display:none;" onchange="handleFilesSelected(this.files)">
+        <div class="btn-file-add" onclick="document.getElementById('filePicker').click()">➕ 選擇檔案 / 簡報 / 照片</div>
+      </div>
+      <div id="fileList" class="file-list"></div>
+      <div style="font-size: 12px; color: #5f6368; margin-top: 6px;">※ 支援所有格式；大於 7MB 檔案將自動標註「Upload Date」並存入「倉庫/年份」資料夾。</div>
+
+      <button class="submit-btn" onclick="submitMemo()">儲存並發布至雲端</button>
+    </div>
+
+    <!-- 2. 新增待辦事項區塊 -->
+    <div id="section-task" class="card">
+      <div class="card-header">
+        <h3 class="card-title">新增待辦事項 (消防)</h3>
+        <button class="btn-back" onclick="goHome()">回首頁</button>
+      </div>
+
+      <label>待辦事項標題：</label>
+      <input type="text" id="taskTitle" placeholder="例如：腹部墊標籤製作、耗材盤點">
+
+      <label>到期日期（選填）：</label>
+      <input type="date" id="taskDue">
+
+      <label>備註說明（選填）：</label>
+      <textarea id="taskNotes" rows="2" placeholder="詳細備註..."></textarea>
+
+      <button class="submit-btn" style="background: var(--warning);" onclick="submitTask()">加入待辦事項</button>
+    </div>
+
+    <!-- 3. 搜尋日誌區塊（新增日期範圍篩選） -->
+    <div id="section-search" class="card">
+      <div class="card-header">
+        <h3 class="card-title">搜尋歷史日誌</h3>
+        <button class="btn-back" onclick="goHome()">回首頁</button>
+      </div>
+
+      <label>關鍵字 / 標籤（選填）：</label>
+      <input type="text" id="searchKey" placeholder="輸入標題、標籤或關鍵字（如：#公文、SOP）">
+
+      <!-- 日期範圍篩選選單 -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
+        <div>
+          <label style="font-size: 13px; color: #5f6368; margin-top: 4px;">開始日期（選填）：</label>
+          <input type="date" id="searchStartDate">
+        </div>
+        <div>
+          <label style="font-size: 13px; color: #5f6368; margin-top: 4px;">結束日期（選填）：</label>
+          <input type="date" id="searchEndDate">
+        </div>
+      </div>
+      <div style="font-size: 12px; color: #5f6368; margin-top: 6px;">
+        ※ 日期會以日誌中的實際日期進行篩選；可單獨使用開始日期或結束日期，也可兩者同時使用。
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button class="submit-btn" style="background: var(--success); flex: 2; margin-top: 0;" onclick="performSearch()">開始搜尋</button>
+        <button class="submit-btn" style="background: #e0e0e0; color: #333; flex: 1; margin-top: 0;" onclick="clearSearchFilter()">重置條件</button>
+      </div>
+
+      <div id="searchResults" style="margin-top: 16px;"></div>
+    </div>
+  </div>
+
+
+  <div id="followupModal" class="followup-overlay">
+    <div class="followup-card">
+      <div class="followup-head">
+        <div class="followup-kicker">EMS FIELD JOURNAL / HISTORY UPDATE</div>
+        <h3 class="followup-title">新增後續處理</h3>
+        <div id="followupReference" class="followup-ref"></div>
+      </div>
+      <div class="followup-body">
+        <label>後續處理說明：</label>
+        <textarea id="followupText" rows="6" placeholder="記錄後續辦理情形、回覆內容、追蹤結果、補充事項……"></textarea>
+        <label>追加附件 / 照片 / 簡報 / PDF：</label>
+        <div class="file-actions">
+          <input type="file" id="followupFilePicker" multiple accept="*/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,image/*,video/*" style="display:none;" onchange="handleFollowupFilesSelected(this.files)">
+          <div class="btn-file-add" onclick="document.getElementById('followupFilePicker').click()">＋ 選擇檔案</div>
+        </div>
+        <div id="followupFileList" class="file-list"></div>
+        <div class="followup-file-note">檔案沿用分塊上傳機制；儲存後自動命名為「Upload Date YYYYMMDD_原檔名」，並存入倉庫／年份資料夾。</div>
+        <div class="followup-actions">
+          <button class="btn-secondary" onclick="closeFollowupModal()">取消</button>
+          <button class="btn-followup-submit" onclick="submitFollowup()">儲存並追加至原位置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 動態進度條彈窗 -->
+  <div id="progressModal" class="progress-overlay">
+    <div class="progress-card">
+      <div class="progress-title" id="progressStatus">檔案上傳中...</div>
+      <div class="progress-track">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-percent" id="progressPercent">0%</div>
+    </div>
+  </div>
+
+  <script>
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzeUt8SE2W7JYiG7W8xXwzVUlH6CCgyBd9N_uJvdUBuEr5R2cLIqJQcsouMFfn1ADqG/exec';
+    const API_TOKEN = 'BALING_EMS_2026';
+
+    let selectedTags = [];
+    let stagedFiles = [];
+    let followupFiles = [];
+    let activeFollowupRecord = null;
+    window.latestSearchResults = [];
+
+    window.onload = function() {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('eventDate').value = now.toISOString().slice(0, 16);
+      loadTasks();
+    };
+
+    document.getElementById('followupModal').addEventListener('click', function(e){ if(e.target===this) closeFollowupModal(); });
+
+    // 【關鍵修改】：利用 x-www-form-urlencoded 完全繞過 CORS 預檢
+    async function callGasApi(action, data = {}) {
+      try {
+        const payloadData = JSON.stringify({ token: API_TOKEN, action: action, data: data });
+        const formBody = new URLSearchParams();
+        formBody.append('data', payloadData);
+
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formBody.toString()
+        });
+
+        if (!response.ok) throw new Error('HTTP 錯誤代碼: ' + response.status);
+        return await response.json();
+      } catch (err) {
+        console.error('API Error:', err);
+        throw err;
       }
-      const isImage = data.fileType && data.fileType.startsWith('image/');
-      const isLarge = data.fileSize > 7 * 1024 * 1024 || !isImage;
-      const savedName = buildUploadedFileName(data.fileName);
-      const finalFile = targetFolder.createFile(Utilities.newBlob(combinedBytes, data.fileType || 'application/octet-stream', savedName));
-      return { success:true, completed:true, url:finalFile.getUrl(), name:savedName, isLarge:isLarge, isImage:isImage };
     }
-    return { success:true, completed:false };
-  } catch (e) { return { success:false, message:e.toString() }; }
-}
-function sanitizeFileName(name) {
-  return String(name || '未命名檔案').replace(/[\\\/:*?"<>|]/g, '_').trim() || '未命名檔案';
-}
-function buildUploadedFileName(fileName) {
-  return 'Upload Date ' + Utilities.formatDate(new Date(), 'GMT+8', 'yyyyMMdd') + '_' + sanitizeFileName(fileName);
-}
-function parseHistoryEntries_() {
-  const doc = DocumentApp.openById(DOC_ID);
-  const body = doc.getBody();
-  const numChildren = body.getNumChildren();
-  const entries = [];
-  let currentLines = [];
-  let currentLinks = [];
-  let startIndex = -1;
 
-  function flush(separatorIndex) {
-    if (!currentLines.length) { currentLines = []; currentLinks = []; startIndex = -1; return; }
-    const fullText = currentLines.join('\n');
-    let time = '';
-    let title = '';
-    currentLines.forEach(function(line) {
-      if (line.indexOf('時間：') === 0) time = line.substring(3).trim();
-      if (line.indexOf('標題：') === 0) title = line.substring(3).trim();
-    });
-    const date = extractDateString(fullText);
-    entries.push({ lines: currentLines.slice(), links: currentLinks.slice(), date: date, time: time, title: title, startIndex: startIndex, separatorIndex: separatorIndex, entryKey: date + '|' + time + '|' + title });
-    currentLines = []; currentLinks = []; startIndex = -1;
-  }
-  for (let i = 0; i < numChildren; i++) {
-    const child = body.getChild(i);
-    if (child.getType() !== DocumentApp.ElementType.PARAGRAPH) continue;
-    const p = child.asParagraph();
-    const text = p.getText().trim();
-    if (text.indexOf('----------------------------------------') > -1) { flush(i); continue; }
-    if (!text) continue;
-    if (startIndex === -1) startIndex = i;
-    currentLines.push(text);
-
-    const textObj = p.editAsText();
-    const pText = p.getText();
-    for (let j = 0; j < pText.length; j++) {
-      const url = textObj.getLinkUrl(j);
-      if (!url) continue;
-      let a = j, b = j;
-      while (a > 0 && textObj.getLinkUrl(a - 1) === url) a--;
-      while (b < pText.length - 1 && textObj.getLinkUrl(b + 1) === url) b++;
-      const linkName = pText.substring(a, b + 1).replace(/^【\s*🔗\s*點擊開啟：/, '').replace(/\s*】$/, '').trim();
-      if (!currentLinks.some(function(l) { return l.url === url; })) currentLinks.push({ name: linkName || '開啟雲端檔案', url: url });
-      j = b;
+    function showSection(type) {
+      document.getElementById('homeView').style.display = 'none';
+      document.getElementById('section-memo').style.display = type === 'memo' ? 'block' : 'none';
+      document.getElementById('section-task').style.display = type === 'task' ? 'block' : 'none';
+      document.getElementById('section-search').style.display = type === 'search' ? 'block' : 'none';
     }
-  }
-  flush(numChildren);
-  return entries;
-}
-function appendFollowUpToHistory(data) {
-  try {
-    if (!data || !data.title || !data.time) return { success:false, message:'缺少原始日誌參照資訊。' };
-    const followUpText = String(data.followUpText || '').trim();
-    const uploadedFiles = Array.isArray(data.uploadedFiles) ? data.uploadedFiles : [];
-    if (!followUpText && uploadedFiles.length === 0) return { success:false, message:'請填寫說明或上傳附件。' };
 
-    const targetDate = normalizeSearchDate(data.date || '');
-    const entries = parseHistoryEntries_();
-    let entry = null;
-    for (let i = 0; i < entries.length; i++) {
-      const e = entries[i];
-      if ((targetDate ? e.date === targetDate : true) && e.time === String(data.time).trim() && e.title === String(data.title).trim()) {
-        entry = e; break;
+    function goHome() {
+      document.getElementById('homeView').style.display = 'block';
+      document.getElementById('section-memo').style.display = 'none';
+      document.getElementById('section-task').style.display = 'none';
+      document.getElementById('section-search').style.display = 'none';
+      loadTasks();
+    }
+
+    function toggleTag(el, tag) {
+      el.classList.toggle('active');
+      if (selectedTags.includes(tag)) {
+        selectedTags = selectedTags.filter(t => t !== tag);
+      } else {
+        selectedTags.push(tag);
       }
     }
-    if (!entry) throw new Error('找不到原始日誌。請重新搜尋後再操作。');
-    const doc = DocumentApp.openById(DOC_ID);
-    const body = doc.getBody();
-    let insertIndex = entry.separatorIndex;
-    if (insertIndex < 0 || insertIndex > body.getNumChildren()) insertIndex = body.getNumChildren();
-    const modifiedTime = Utilities.formatDate(new Date(), 'GMT+8', 'yyyy/MM/dd HH:mm:ss');
-    const header = body.insertParagraph(insertIndex, '【後續處理｜追加於 ' + modifiedTime + '】');
-    header.setHeading(DocumentApp.ParagraphHeading.HEADING3);
-    insertIndex++;
-    if (followUpText) { body.insertParagraph(insertIndex, '後續處理說明：' + followUpText); insertIndex++; }
-    uploadedFiles.forEach(function(f) {
-      const pLink = body.insertParagraph(insertIndex, '📎 後續附件：');
-      const linkButton = pLink.appendText('【 🔗 點擊開啟：' + f.name + ' 】\n');
-      linkButton.setLinkUrl(f.url); linkButton.setForegroundColor('#1a73e8'); linkButton.setUnderline(true); linkButton.setBold(true);
-      insertIndex++;
-    });
-    body.insertParagraph(insertIndex, '修改時間：' + modifiedTime);
-    return { success:true, message:'後續處理已精準追加至原日誌位置。', modifiedTime:modifiedTime };
-  } catch (e) { return { success:false, message:'追加失敗：' + e.toString() }; }
-}
-function saveMemoDoc(data) {
-  try {
-    const eventDate = data.date ? new Date(data.date) : new Date();
-    const year = eventDate.getFullYear();
-    const month = eventDate.getMonth() + 1;
-    const day = eventDate.getDate();
-    const targetTabName = `${year}/${month}`;
-    const dateHeadingText = `${year}年${month}月${day}日`;
-    const timeString = Utilities.formatDate(eventDate, "GMT+8", "yyyy/MM/dd HH:mm");
-    writeMemoToDoc(DOC_ID, targetTabName, dateHeadingText, timeString, data, data.uploadedFiles);
-    return { success: true, message: `紀錄與 ${(data.uploadedFiles || []).length} 個附件已儲存！` };
-  } catch (e) { return { success: false, message: '寫入文件失敗：' + e.toString() }; }
-}
-function writeMemoToDoc(docId, targetTabName, dateHeadingText, timeString, data, filesList) {
-  const doc = DocumentApp.openById(docId);
-  const body = doc.getBody();
-  let insertIndex = 0;
-  const paragraphs = body.getParagraphs();
-  let foundSection = false;
-  for (let i = 0; i < paragraphs.length; i++) {
-    const text = paragraphs[i].getText().trim();
-    if (text === `# ${targetTabName}` || text === targetTabName || text.startsWith(`# ${targetTabName}`)) {
-      insertIndex = i + 1; foundSection = true; break;
+
+    function handleFilesSelected(files) {
+      if (!files || files.length === 0) return;
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        stagedFiles.push({ file: f, name: f.name, size: f.size, type: f.type });
+      }
+      renderFileList();
+      document.getElementById('filePicker').value = '';
     }
-  }
-  if (!foundSection) {
-    const pMonth = body.insertParagraph(0, `\n# ${targetTabName}\n`);
-    pMonth.setHeading(DocumentApp.ParagraphHeading.HEADING1);
-    insertIndex = 1;
-  }
-  body.insertParagraph(insertIndex, '----------------------------------------');
-  if (filesList && filesList.length > 0) {
-    for (let j = filesList.length - 1; j >= 0; j--) {
-      const f = filesList[j];
-      const pLink = body.insertParagraph(insertIndex, `📎 附件檔案：`);
-      const linkButton = pLink.appendText(`【 🔗 點擊開啟：${f.name} 】\n`);
-      linkButton.setLinkUrl(f.url); linkButton.setForegroundColor('#1a73e8'); linkButton.setUnderline(true); linkButton.setBold(true);
+
+    function removeFile(index) {
+      stagedFiles.splice(index, 1);
+      renderFileList();
     }
-  }
-  body.insertParagraph(insertIndex, `說明：${data.content || '無'}`);
-  body.insertParagraph(insertIndex, `標籤：${(data.tags || []).map(t => '#' + t).join(' ')}`);
-  body.insertParagraph(insertIndex, `標題：${data.title}`);
-  body.insertParagraph(insertIndex, `時間：${timeString}`);
-  body.insertParagraph(insertIndex, `\n【${dateHeadingText}】`).setHeading(DocumentApp.ParagraphHeading.HEADING2);
-}
-function getFireTaskListId() {
-  const taskLists = Tasks.Tasklists.list();
-  if (taskLists && taskLists.items) {
-    for (let i = 0; i < taskLists.items.length; i++) {
-      if (taskLists.items[i].title === '消防') return taskLists.items[i].id;
+
+    function renderFileList() {
+      const container = document.getElementById('fileList');
+      if (stagedFiles.length === 0) { container.innerHTML = ''; return; }
+      container.innerHTML = stagedFiles.map((f, idx) => {
+        const sizeMB = (f.size / (1024 * 1024)).toFixed(1);
+        const isLarge = f.size > 7 * 1024 * 1024;
+        return `
+          <div class="file-chip">
+            <div class="file-chip-info">
+              <span>📎</span>
+              <span class="file-name" title="${f.name}">${f.name}</span>
+              <span class="file-badge ${isLarge ? 'large' : ''}">${sizeMB} MB</span>
+            </div>
+            <button class="btn-file-del" onclick="removeFile(${idx})">🗑️</button>
+          </div>
+        `;
+      }).join('');
     }
-  }
-  return Tasks.Tasklists.insert({ title: '消防' }).id;
-}
-function getFireTasks() {
-  try {
-    const listId = getFireTaskListId();
-    const result = Tasks.Tasks.list(listId, { showCompleted: false, showHidden: false });
-    const tasks = result.items || [];
-    return tasks.map(t => ({ id: t.id, title: t.title || '無標題', notes: t.notes || '', due: t.due ? Utilities.formatDate(new Date(t.due), "GMT+8", "yyyy/MM/dd") : '' }));
-  } catch (e) {
-    throw new Error('讀取待辦失敗：' + e.message);
-  }
-}
-function completeFireTask(taskId) {
-  try {
-    const listId = getFireTaskListId();
-    Tasks.Tasks.patch({ status: 'completed' }, listId, taskId);
-    return { success: true };
-  } catch (e) { throw new Error(e.message); }
-}
-function addFireTask(data) {
-  try {
-    const listId = getFireTaskListId();
-    Tasks.Tasks.insert({ title: data.title, notes: data.notes || '', due: data.due ? new Date(data.due).toISOString() : null }, listId);
-    return { success: true, message: '待辦事項已同步至 Google Tasks (消防)！' };
-  } catch (e) { return { success: false, message: '新增失敗：' + e.toString() }; }
-}
-function searchHistory(searchOptions) {
-  try {
-    let q = ''; let startDate = ''; let endDate = '';
-    if (typeof searchOptions === 'object' && searchOptions !== null) {
-      q = String(searchOptions.query || '').trim().toLowerCase();
-      if (q.indexOf('#') === 0) q = q.substring(1).trim();
-      startDate = normalizeSearchDate(searchOptions.startDate); endDate = normalizeSearchDate(searchOptions.endDate);
-    } else if (typeof searchOptions === 'string') {
-      q = searchOptions.trim().toLowerCase();
-      if (q.indexOf('#') === 0) q = q.substring(1).trim();
+
+    async function loadTasks() {
+      const container = document.getElementById('taskList');
+      container.innerHTML = '<div style="color:#666; font-size:14px; text-align:center;">同步待辦事項中...</div>';
+      try {
+        const tasks = await callGasApi('getFireTasks');
+        if (tasks && tasks.success === false) throw new Error(tasks.message || '後端回傳失敗狀態');
+        if (!Array.isArray(tasks)) throw new Error('伺服器回傳資料格式錯誤，預期為陣列。');
+        if (!tasks || tasks.length === 0) {
+          container.innerHTML = '<div style="color:#666; font-size:14px; text-align:center; padding:10px;">🎉 目前無未完成的消防待辦事項</div>';
+          return;
+        }
+        container.innerHTML = tasks.map(t => `
+          <div class="task-item" id="task-${t.id}">
+            <input type="checkbox" class="task-checkbox" onchange="completeTask('${t.id}')">
+            <div class="task-content">
+              <div class="task-title">${t.title}</div>
+              ${t.notes ? `<div class="task-notes">${t.notes}</div>` : ''}
+              ${t.due ? `<div class="task-due">📅 到期日：${t.due}</div>` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch(e) {
+        container.innerHTML = `<div style="color:#d93025; font-size:14px; text-align:center; padding:10px; line-height: 1.5;">待辦載入失敗：<br>${escapeHtml(e.message)}</div>`;
+      }
     }
-    const entries = parseHistoryEntries_();
-    const matched = [];
-    entries.forEach(function(item) {
-      const lowerFull = item.lines.join('\n').toLowerCase();
-      if (q && lowerFull.indexOf(q) === -1 && !item.links.some(l => String(l.name || '').toLowerCase().indexOf(q) > -1)) return;
-      if (startDate && (!item.date || item.date < startDate)) return;
-      if (endDate && (!item.date || item.date > endDate)) return;
-      matched.push({ lines:item.lines, links:item.links, date:item.date, time:item.time, title:item.title, entryKey:item.entryKey });
-    });
-    return matched.slice(0, 30);
-  } catch (e) { throw new Error(e.message); }
-}
+
+    async function completeTask(taskId) {
+      if (taskId === 'error') return;
+      const el = document.getElementById(`task-${taskId}`);
+      if (el) el.classList.add('fade-out');
+      try {
+        await callGasApi('completeFireTask', { taskId: taskId });
+        setTimeout(() => { 
+          if (el) el.remove(); 
+          if (document.querySelectorAll('.task-item:not(.fade-out)').length === 0) {
+            document.getElementById('taskList').innerHTML = '<div style="color:#666; font-size:14px; text-align:center; padding:10px;">🎉 目前無未完成的消防待辦事項</div>';
+          }
+        }, 300);
+      } catch (e) {
+        if (el) el.classList.remove('fade-out');
+        alert('完成失敗，請重試。');
+      }
+    }
+
+    async function submitTask() {
+      const title = document.getElementById('taskTitle').value.trim();
+      const due = document.getElementById('taskDue').value;
+      const notes = document.getElementById('taskNotes').value.trim();
+      if (!title) return alert('請輸入待辦標題！');
+      try {
+        const res = await callGasApi('addFireTask', { title: title, due: due, notes: notes });
+        if (res.success) {
+          alert(res.message);
+          document.getElementById('taskTitle').value = '';
+          document.getElementById('taskDue').value = '';
+          document.getElementById('taskNotes').value = '';
+          goHome();
+        } else {
+          alert('新增失敗：' + res.message);
+        }
+      } catch (e) { alert('新增失敗，請檢查網路連線。'); }
+    }
+
+    function setProgress(percent, text) {
+      document.getElementById('progressBar').style.width = percent + '%';
+      document.getElementById('progressPercent').innerText = percent + '%';
+      if (text) document.getElementById('progressStatus').innerText = text;
+    }
+
+    async function submitMemo() {
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
+      const date = document.getElementById('eventDate').value;
+      if (!title) return alert('請輸入標題！');
+
+      let finalTags = [...selectedTags];
+      const customInput = document.getElementById('customTags').value.trim();
+      if (customInput) {
+        const splitTags = customInput.split(/[\s,，]+/);
+        splitTags.forEach(t => {
+          const clean = t.replace(/^#/, '').trim();
+          if (clean && !finalTags.includes(clean)) finalTags.push(clean);
+        });
+      }
+
+      const eventDate = date ? new Date(date) : new Date();
+      const year = eventDate.getFullYear();
+      const modal = document.getElementById('progressModal');
+      modal.style.display = 'flex';
+      setProgress(5, '準備處理檔案...');
+      const uploadedFilesInfo = [];
+      const totalFiles = stagedFiles.length;
+
+      try {
+        for (let i = 0; i < totalFiles; i++) {
+          const item = stagedFiles[i];
+          const fileObj = item.file;
+          const fileSize = item.size;
+
+          if (fileSize > 4 * 1024 * 1024) {
+            const CHUNK_SIZE = 2.5 * 1024 * 1024;
+            const totalChunks = Math.ceil(fileSize / CHUNK_SIZE);
+            const uploadId = 'up_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+            for (let c = 0; c < totalChunks; c++) {
+              const start = c * CHUNK_SIZE;
+              const end = Math.min(start + CHUNK_SIZE, fileSize);
+              const chunkBlob = fileObj.slice(start, end);
+              const base64Chunk = await readFileAsDataURL(chunkBlob);
+
+              const chunkRes = await callGasApi('saveFileChunk', {
+                uploadId: uploadId, chunkIndex: c, totalChunks: totalChunks,
+                fileName: item.name, fileType: item.type, fileSize: fileSize,
+                base64Chunk: base64Chunk, year: year
+              });
+
+              if (!chunkRes.success) throw new Error(chunkRes.message || '分塊上傳失敗');
+              const overallPercent = Math.round(((i + (c + 1) / totalChunks) / totalFiles) * 85) + 5;
+              setProgress(overallPercent, `正在上傳 ${item.name} (${Math.round((c+1)/totalChunks*100)}%)...`);
+              if (chunkRes.completed) uploadedFilesInfo.push(chunkRes);
+            }
+          } else {
+            const dataUrl = await readFileAsDataURL(fileObj);
+            const directRes = await callGasApi('saveFileDirect', {
+              fileName: item.name, fileType: item.type, fileData: dataUrl, year: year
+            });
+            if (!directRes.success) throw new Error(directRes.message || '檔案上傳失敗');
+            uploadedFilesInfo.push(directRes);
+            const overallPercent = Math.round(((i + 1) / totalFiles) * 85) + 5;
+            setProgress(overallPercent, `正在處理 ${item.name}...`);
+          }
+        }
+
+        setProgress(95, '正在寫入 Google 文件與日誌...');
+        const memoRes = await callGasApi('saveMemoDoc', {
+          title: title, content: content, date: date,
+          tags: finalTags, uploadedFiles: uploadedFilesInfo
+        });
+        if (!memoRes.success) throw new Error(memoRes.message);
+
+        setProgress(100, '處理完成！');
+        setTimeout(() => {
+          modal.style.display = 'none';
+          alert(memoRes.message);
+          document.getElementById('title').value = '';
+          document.getElementById('content').value = '';
+          document.getElementById('customTags').value = '';
+          stagedFiles = []; renderFileList(); selectedTags = [];
+          document.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
+          goHome();
+        }, 400);
+      } catch (err) {
+        modal.style.display = 'none';
+        alert('儲存失敗：' + err);
+      }
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = e => reject(e);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function clearSearchFilter() {
+      document.getElementById('searchKey').value = '';
+      document.getElementById('searchStartDate').value = '';
+      document.getElementById('searchEndDate').value = '';
+      document.getElementById('searchResults').innerHTML = '';
+    }
+
+    async function performSearch() {
+      const query = document.getElementById('searchKey').value.trim();
+      const startDate = document.getElementById('searchStartDate').value;
+      const endDate = document.getElementById('searchEndDate').value;
+
+      if (startDate && endDate && startDate > endDate) {
+        alert('開始日期不可晚於結束日期！'); return;
+      }
+      const container = document.getElementById('searchResults');
+      container.innerHTML = '<div style="color:#666; text-align:center; padding:16px;">搜尋中...</div>';
+
+      try {
+        const results = await callGasApi('searchHistory', { query: query, startDate: startDate, endDate: endDate });
+        if (results && results.success === false) throw new Error(results.message || '後端回傳失敗狀態');
+        if (!Array.isArray(results)) throw new Error('伺服器回傳資料格式錯誤，預期為陣列。');
+        if (!results || results.length === 0) {
+          container.innerHTML = '<div style="color:#666; text-align:center; padding:16px;">查無符合條件之紀錄</div>'; return;
+        }
+        if (results.length === 1 && results[0].lines && results[0].lines.length === 1 && results[0].lines[0].indexOf('搜尋失敗：') === 0) {
+          container.innerHTML = '<div style="color:#d93025; text-align:center; padding:16px;">' + escapeHtml(results[0].lines[0]) + '</div>'; return;
+        }
+
+        container.innerHTML = results.map((r, idx) => {
+          const textHtml = (r.lines || []).map(line => {
+            const safeLine = escapeHtml(line);
+            const formatted = safeLine.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#1a73e8; word-break:break-all;">$1</a>');
+            return `<div>${formatted}</div>`;
+          }).join('');
+          let linksHtml = '';
+          if (r.links && r.links.length > 0) {
+            linksHtml = '<div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">' +
+              r.links.map(l => `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer" class="search-file-btn"><span>📎</span><span style="flex:1; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">開啟檔案：${escapeHtml(l.name)}</span><span style="font-size:12px;">↗</span></a>`).join('') + '</div>';
+          }
+          const meta = (r.date || r.time) ? `<div class="result-meta">${escapeHtml(r.date || '')}${r.time ? '  ·  ' + escapeHtml(r.time) : ''}</div>` : '';
+          const followupButton = (r.title && r.time) ? `<button class="followup-trigger" onclick="openFollowupModal(${idx})">✏️ 新增後續處理</button>` : '';
+          return `<div class="result-item">${meta}${textHtml}${linksHtml}${followupButton}</div>`;
+        }).join('');
+        window.latestSearchResults = results;
+      } catch (error) {
+        container.innerHTML = `<div style="color:#d93025; text-align:center; padding:16px; line-height: 1.5;">搜尋失敗：<br>${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    function openFollowupModal(index) {
+      const record = (window.latestSearchResults || [])[index];
+      if (!record || !record.title || !record.time) { alert('此筆紀錄缺少標題或發布時間，無法精準定位。'); return; }
+      activeFollowupRecord = { date:record.date || '', time:record.time || '', title:record.title || '' };
+      followupFiles = [];
+      document.getElementById('followupText').value = '';
+      document.getElementById('followupFilePicker').value = '';
+      document.getElementById('followupReference').innerHTML = '<strong>原始標題：</strong>' + escapeHtml(activeFollowupRecord.title) + '<br><strong>發布時間：</strong>' + escapeHtml(activeFollowupRecord.time) + (activeFollowupRecord.date ? '<br><strong>日誌日期：</strong>' + escapeHtml(activeFollowupRecord.date) : '');
+      renderFollowupFileList();
+      document.getElementById('followupModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('followupText').focus(), 80);
+    }
+
+    function closeFollowupModal() {
+      document.getElementById('followupModal').style.display = 'none';
+      activeFollowupRecord = null; followupFiles = []; renderFollowupFileList();
+    }
+
+    function handleFollowupFilesSelected(files) {
+      if (!files || !files.length) return;
+      for (let i = 0; i < files.length; i++) { const f = files[i]; followupFiles.push({file:f,name:f.name,size:f.size,type:f.type}); }
+      renderFollowupFileList(); document.getElementById('followupFilePicker').value = '';
+    }
+
+    function removeFollowupFile(index) { followupFiles.splice(index,1); renderFollowupFileList(); }
+
+    function renderFollowupFileList() {
+      const container = document.getElementById('followupFileList');
+      if (!container) return;
+      if (!followupFiles.length) { container.innerHTML = '<div class="followup-empty">尚未選擇附件</div>'; return; }
+      container.innerHTML = followupFiles.map((f,idx) => {
+        const sizeMB=(f.size/(1024*1024)).toFixed(1), large=f.size>7*1024*1024;
+        return `<div class="file-chip"><div class="file-chip-info"><span>📎</span><span class="file-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span><span class="file-badge ${large?'large':''}">${sizeMB} MB</span></div><button class="btn-file-del" onclick="removeFollowupFile(${idx})">×</button></div>`;
+      }).join('');
+    }
+
+    async function submitFollowup() {
+      if (!activeFollowupRecord) return;
+      const followUpText=document.getElementById('followupText').value.trim();
+      if (!followUpText && !followupFiles.length) { alert('請至少填寫後續處理說明或上傳一個附件。'); return; }
+      const record=activeFollowupRecord;
+      const year=record.date ? parseInt(record.date.slice(0,4),10) : new Date().getFullYear();
+      const modal=document.getElementById('progressModal'); modal.style.display='flex'; setProgress(3,'準備追加後續處理...');
+      const uploadedFilesInfo=[];
+      try {
+        const totalFiles=followupFiles.length;
+        for(let i=0;i<totalFiles;i++){
+          const item=followupFiles[i], fileObj=item.file, fileSize=item.size;
+          if(fileSize>4*1024*1024){
+            const CHUNK_SIZE=2.5*1024*1024, totalChunks=Math.ceil(fileSize/CHUNK_SIZE), uploadId='fu_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);
+            for(let c=0;c<totalChunks;c++){
+              const base64Chunk=await readFileAsDataURL(fileObj.slice(c*CHUNK_SIZE,Math.min((c+1)*CHUNK_SIZE,fileSize)));
+              const res = await callGasApi('saveFileChunk', {
+                uploadId:uploadId,chunkIndex:c,totalChunks:totalChunks,fileName:item.name,fileType:item.type,fileSize:fileSize,base64Chunk:base64Chunk,year:year
+              });
+              if(!res.success) throw new Error(res.message||'分塊上傳失敗');
+              setProgress(totalFiles?Math.round(((i+(c+1)/totalChunks)/totalFiles)*82)+5:10,`正在上傳 ${item.name} (${Math.round((c+1)/totalChunks*100)}%)...`);
+              if(res.completed) uploadedFilesInfo.push(res);
+            }
+          } else {
+            const dataUrl=await readFileAsDataURL(fileObj);
+            const res = await callGasApi('saveFileDirect', {
+              fileName:item.name,fileType:item.type,fileData:dataUrl,year:year
+            });
+            if(!res.success) throw new Error(res.message||'檔案上傳失敗'); uploadedFilesInfo.push(res);
+            setProgress(totalFiles?Math.round(((i+1)/totalFiles)*82)+5:10,`正在處理 ${item.name}...`);
+          }
+        }
+        setProgress(94,'正在精準追加至原始日誌位置...');
+        const result = await callGasApi('appendFollowUpToHistory', {
+          date:record.date,time:record.time,title:record.title,followUpText:followUpText,uploadedFiles:uploadedFilesInfo
+        });
+        if(!result.success) throw new Error(result.message||'追加失敗');
+        setProgress(100,'追加完成');
+        setTimeout(()=>{ modal.style.display='none'; closeFollowupModal(); alert(result.message+(result.modifiedTime?'\n修改時間：'+result.modifiedTime:'')); performSearch(); },350);
+      } catch(err) { modal.style.display='none'; alert('追加失敗：'+(err&&err.message?err.message:err)); }
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
