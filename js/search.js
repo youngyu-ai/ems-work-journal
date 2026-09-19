@@ -1,15 +1,7 @@
 import { searchJournalGAS } from './api.js';
-import { renderSearchResults } from './ui.js';
+import { getCachedSearchResults, setCachedSearchResults } from './db.js';
+import { renderSearchResults, setNetworkStatus } from './ui.js';
 
-// 更新連線狀態顯示
-function updateStatus(status, text) {
-  const badge = document.getElementById('networkBadge');
-  if (!badge) return;
-  badge.className = `status-badge ${status}`;
-  badge.textContent = text || (status === 'online' ? '🟢 連線正常' : '🟡 離線模式');
-}
-
-// 搜尋執行主入口
 export async function executeSearch(keyword, targetField) {
   const container = document.getElementById('searchResults');
   if (!container) return;
@@ -19,35 +11,32 @@ export async function executeSearch(keyword, targetField) {
     return;
   }
 
-  const queryKey = `ems_search_${targetField}_${keyword.trim()}`;
+  const queryKey = `${targetField}:${keyword.trim()}`;
 
-  // 1. SWR 快取策略：直接從本地記憶體讀取上一次的搜尋結果
-  const cached = localStorage.getItem(queryKey);
-  if (cached) {
-    try {
-      const parsedData = JSON.parse(cached);
-      if (parsedData && parsedData.length > 0) {
-        renderSearchResults(parsedData, container);
-        updateStatus('online', '⚡ 顯示本機快取中，正在背景同步...');
-      }
-    } catch (e) {}
-  } else {
+  // 1. SWR 策略：先嘗試讀取本地快取秒開
+  try {
+    const cached = await getCachedSearchResults(queryKey);
+    if (cached && cached.results && cached.results.length > 0) {
+      renderSearchResults(cached.results, container);
+      setNetworkStatus('online', '⚡ 顯示快取中，正在背景同步...');
+    } else {
+      container.innerHTML = '<div style="color:#666; text-align:center; padding:16px;">🔍 正在連線搜尋中...</div>';
+    }
+  } catch (e) {
     container.innerHTML = '<div style="color:#666; text-align:center; padding:16px;">🔍 正在連線搜尋中...</div>';
   }
 
-  // 2. 向 GAS 後端取得最新搜尋結果
+  // 2. 向 GAS 發送查詢
   try {
     const res = await searchJournalGAS(keyword.trim(), targetField);
     if (res && res.success && res.data) {
       renderSearchResults(res.data, container);
-      localStorage.setItem(queryKey, JSON.stringify(res.data)); // 存入本地快取
-      updateStatus('online', '🟢 連線正常');
+      await setCachedSearchResults(queryKey, res.data);
+      setNetworkStatus('online', '🟢 連線正常');
     } else {
-      if (!cached) {
-        container.innerHTML = `<div style="color:#c53030; text-align:center; padding:16px;">搜尋失敗：${res ? res.error : '查無資料'}</div>`;
-      }
+      container.innerHTML = `<div style="color:#c53030; text-align:center; padding:16px;">搜尋失敗：${res ? res.error : '查無資料'}</div>`;
     }
   } catch (err) {
-    updateStatus('offline', '🟡 離線模式 (僅顯示快取)');
+    setNetworkStatus('offline', '🟡 離線模式 (僅顯示快取)');
   }
 }
