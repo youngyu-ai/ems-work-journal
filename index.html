@@ -3,100 +3,155 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>救護業務日誌 PWA 3.0</title>
+  <title>救護業務日誌</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/components.css">
 </head>
 <body>
-  <!-- 頂端同步監控列 (消防隊專用) -->
-  <header class="app-header">
-    <div class="header-main">
-      <div class="brand">
-        <h1>救護業務日誌</h1>
-        <span class="badge-sub">EMS LOG 3.0</span>
-      </div>
-      <div class="sync-indicator" id="syncStatus">
-        <span class="status-dot online"></span>
-        <span class="status-text">連線正常</span>
-        <span class="badge-pending" id="pendingCount" style="display:none;">0 待同步</span>
+  <div class="container">
+    <!-- 原版經典 Header -->
+    <div class="header">
+      <div class="header-content">
+        <div>
+          <h1>救護業務日誌</h1>
+          <p>業務備忘錄與消防待辦管理</p>
+        </div>
+        <div class="sync-indicator" id="syncStatus">
+          <span class="status-dot online"></span>
+          <span class="status-text">連線正常</span>
+          <span class="badge-pending" id="pendingCount" style="display:none;">0 待同步</span>
+        </div>
       </div>
     </div>
-  </header>
 
-  <!-- PWA 版本更新提示橫幅 -->
-  <div id="updateBanner" class="update-banner" style="display:none;">
-    <span>✨ 系統已有新版本更新！</span>
-    <button id="btnApplyUpdate" class="btn-update">立即套用</button>
-  </div>
+    <!-- PWA 版本更新提示橫幅 -->
+    <div id="updateBanner" class="update-banner" style="display:none;">
+      <span>✨ 系統已有新版本更新！</span>
+      <button id="btnApplyUpdate" class="btn-update">立即套用</button>
+    </div>
 
-  <main class="container">
-    <!-- 導航選單 -->
-    <nav class="nav-grid">
-      <button class="nav-btn btn-memo active" data-target="section-memo">
-        <span class="icon">📝</span>
-        <span>新增備忘</span>
-      </button>
-      <button class="nav-btn btn-search" data-target="section-search">
-        <span class="icon">🔍</span>
-        <span>檢索日誌</span>
-      </button>
-      <button class="nav-btn btn-tasks" data-target="section-tasks">
-        <span class="icon">☑️</span>
-        <span>消防待辦</span>
-      </button>
-    </nav>
+    <!-- 首頁區域（100% 還原原版 3 個按鈕 + 待辦事項清單） -->
+    <div id="homeView">
+      <div class="home-menu">
+        <button class="btn-main btn-memo" onclick="showSection('memo')">
+          <span class="btn-icon">📝</span>
+          <span>1. 新增備忘</span>
+        </button>
+        <button class="btn-main btn-task" onclick="showSection('task')">
+          <span class="btn-icon">☑️</span>
+          <span>2. 新增待辦</span>
+        </button>
+        <button class="btn-main btn-search" onclick="showSection('search')">
+          <span class="btn-icon">🔍</span>
+          <span>3. 搜尋日誌</span>
+        </button>
+      </div>
 
-    <!-- 1. 新增備忘錄 (支援離線草稿儲存) -->
-    <section id="section-memo" class="view-panel active">
+      <!-- 未完成待辦清單 -->
+      <div class="task-section">
+        <div class="task-header">
+          <h3>📋 待辦事項 (消防)</h3>
+          <span class="btn-refresh" onclick="loadTasks()">🔄 重新整理</span>
+        </div>
+        <div id="taskList">載入待辦事項中...</div>
+      </div>
+    </div>
+
+    <!-- 1. 新增備忘錄區塊 -->
+    <div id="section-memo" class="card">
+      <div class="card-header">
+        <h3 class="card-title">新增日誌備忘</h3>
+        <button class="btn-back" onclick="goHome()">回首頁</button>
+      </div>
+
       <form id="memoForm">
-        <label>發布日期與時間</label>
+        <label>發布日期與時間：</label>
         <input type="datetime-local" id="memoDate" required>
 
-        <label>標題</label>
-        <input type="text" id="memoTitle" placeholder="例如：到院前血氧量測作業標準" required>
+        <label>標題：</label>
+        <input type="text" id="memoTitle" placeholder="例如：到院前啟動輸血計畫、AED定期檢查" required>
 
-        <label>常用快捷標籤</label>
-        <div class="tag-list" id="tagList">
-          <button type="button" class="tag-chip">器材</button>
-          <button type="button" class="tag-chip">耗材</button>
-          <button type="button" class="tag-chip">公文</button>
-          <button type="button" class="tag-chip">SOP</button>
-          <button type="button" class="tag-chip">案例教育</button>
+        <label>快捷標籤（可多選）：</label>
+        <div class="tag-group" id="tagList">
+          <span class="tag-chip">完成事項</span>
+          <span class="tag-chip">器材</span>
+          <span class="tag-chip">耗材</span>
+          <span class="tag-chip">交辦事項</span>
+          <span class="tag-chip">公文</span>
+          <span class="tag-chip">SOP</span>
+          <span class="tag-chip">案例教育</span>
         </div>
 
-        <label>內容說明</label>
-        <textarea id="memoContent" rows="4" placeholder="詳細說明勤務或交辦內容..."></textarea>
+        <label style="margin-top: 10px; font-weight: normal; font-size: 13px; color: #5f6368;">或手動輸入自訂標籤（多個標籤請用空格或逗號分開）：</label>
+        <input type="text" id="customTags" placeholder="例如：教育訓練 品管 骨針">
 
-        <label>附加檔案 (按需載入上傳引擎)</label>
-        <div class="file-drop-zone" id="dropZone">
-          <input type="file" id="fileInput" multiple style="display:none;">
-          <button type="button" class="btn-add-file" id="btnPickFile">📎 選擇相片、PDF、簡報</button>
-          <div id="selectedFileList" class="selected-file-list"></div>
+        <label>內容說明：</label>
+        <textarea id="memoContent" rows="3" placeholder="輸入事項細節..."></textarea>
+
+        <label>附加檔案 / 簡報 / PDF / 影片（可多選）：</label>
+        <div class="file-actions">
+          <input type="file" id="filePicker" multiple accept="*/*,.html,.htm,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,image/*,video/*" style="display:none;">
+          <div class="btn-file-add" id="btnPickFile">➕ 選擇檔案 / 簡報 / 照片</div>
         </div>
+        <div id="selectedFileList" class="file-list"></div>
+        <div style="font-size: 12px; color: #5f6368; margin-top: 6px;">※ 支援所有格式；大於 7MB 檔案將自動標註「Upload Date」並存入「倉庫/年份」資料夾。</div>
 
-        <button type="submit" class="btn-primary-action" id="btnSubmitMemo">儲存並同步至雲端</button>
+        <button type="submit" class="submit-btn" id="btnSubmitMemo">儲存並發布至雲端</button>
       </form>
-    </section>
+    </div>
 
-    <!-- 2. SWR 搜尋面板 -->
-    <section id="section-search" class="view-panel">
-      <div class="search-filter-box">
-        <input type="text" id="searchKeyword" placeholder="輸入關鍵字或標籤 (如：#公文)">
-        <div class="date-range-row">
+    <!-- 2. 新增待辦事項區塊 -->
+    <div id="section-task" class="card">
+      <div class="card-header">
+        <h3 class="card-title">新增待辦事項 (消防)</h3>
+        <button class="btn-back" onclick="goHome()">回首頁</button>
+      </div>
+
+      <label>待辦事項標題：</label>
+      <input type="text" id="taskTitle" placeholder="例如：腹部墊標籤製作、耗材盤點">
+
+      <label>到期日期（選填）：</label>
+      <input type="date" id="taskDue">
+
+      <label>備註說明（選填）：</label>
+      <textarea id="taskNotes" rows="2" placeholder="詳細備註..."></textarea>
+
+      <button type="button" class="submit-btn" style="background: var(--warning);" id="btnSubmitTask">加入待辦事項</button>
+    </div>
+
+    <!-- 3. 搜尋日誌區塊 -->
+    <div id="section-search" class="card">
+      <div class="card-header">
+        <h3 class="card-title">搜尋歷史日誌</h3>
+        <button class="btn-back" onclick="goHome()">回首頁</button>
+      </div>
+
+      <label>關鍵字 / 標籤（選填）：</label>
+      <input type="text" id="searchKeyword" placeholder="輸入標題、標籤或關鍵字（如：#公文、SOP）">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
+        <div>
+          <label style="font-size: 13px; color: #5f6368; margin-top: 4px;">開始日期（選填）：</label>
           <input type="date" id="searchStartDate">
+        </div>
+        <div>
+          <label style="font-size: 13px; color: #5f6368; margin-top: 4px;">結束日期（選填）：</label>
           <input type="date" id="searchEndDate">
         </div>
-        <button type="button" class="btn-search-action" id="btnExecuteSearch">開始查詢 (SWR 即時讀取)</button>
       </div>
-      <div id="searchResultList" class="search-results-container"></div>
-    </section>
+      <div style="font-size: 12px; color: #5f6368; margin-top: 6px;">
+        ※ 日期會以日誌中的實際日期進行篩選；可單獨使用開始日期或結束日期，也可兩者同時使用。
+      </div>
 
-    <!-- 3. 待辦清單面板 -->
-    <section id="section-tasks" class="view-panel">
-      <div id="taskListContainer" class="task-list">載入中...</div>
-    </section>
-  </main>
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button type="button" class="submit-btn" style="background: var(--success); flex: 2; margin-top: 0;" id="btnExecuteSearch">開始搜尋 (SWR 即時讀取)</button>
+        <button type="button" class="submit-btn" style="background: #e0e0e0; color: #333; flex: 1; margin-top: 0;" id="btnClearSearch">重置條件</button>
+      </div>
+
+      <div id="searchResultList" style="margin-top: 16px;"></div>
+    </div>
+  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>
