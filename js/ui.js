@@ -41,7 +41,7 @@ export function renderSearchResults(results, container) {
   }).join('');
 }
 
-// 跳脫 HTML 字元，防止 XSS 注入
+// 跳脫 HTML 字元
 export function escapeHtml(value) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;')
