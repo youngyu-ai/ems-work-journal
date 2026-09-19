@@ -4,187 +4,67 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>救護業務日誌</title>
+  <link rel="manifest" href="manifest.json">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
-  <style>
-    :root {
-      --bg: #f5f4ef;
-      --card: #ffffff;
-      --border: #e2e0d8;
-      --text: #2c2c2b;
-      --text-sub: #76746e;
-      --accent: #8b3a2b;
-      --radius: 8px;
-    }
-    * { box-sizing: border-box; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      margin: 0;
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-    }
-    .container { width: 100%; max-width: 650px; }
-    .header {
-      background: var(--card);
-      padding: 16px 20px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      border-left: 5px solid var(--accent);
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .header h1 { margin: 0; font-size: 20px; font-weight: 600; }
-    .header p { margin: 4px 0 0 0; font-size: 13px; color: var(--text-sub); }
-    .badge {
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: #e8f5e9;
-      color: #2e7d32;
-      font-weight: 500;
-    }
-    .badge.syncing { background: #e3f2fd; color: #1565c0; }
-    .badge.offline { background: #fff3e0; color: #e65100; }
-
-    /* 三大卡片網格 */
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
-    .btn-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 8px;
-      text-align: center;
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.1s, background 0.1s;
-    }
-    .btn-card:active { transform: scale(0.97); background: #eee; }
-    .btn-icon { font-size: 28px; margin-bottom: 6px; }
-    .btn-title { font-size: 14px; font-weight: 600; }
-
-    /* 區塊面板 */
-    .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      margin-bottom: 16px;
-    }
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
-      margin-bottom: 15px;
-    }
-    .panel-title { font-size: 16px; font-weight: 600; }
-    .btn-text { background: none; border: none; color: #1976d2; cursor: pointer; font-size: 14px; }
-    .btn-back {
-      background: #eee;
-      border: 1px solid var(--border);
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 13px;
-    }
-
-    /* 待辦列表 */
-    .task-list { display: flex; flex-direction: column; gap: 8px; }
-    .task-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 12px;
-      background: #faf9f6;
-      border: 1px solid #eeece5;
-      border-radius: 6px;
-    }
-    .task-row input[type="checkbox"] { width: 18px; height: 18px; margin-top: 3px; cursor: pointer; }
-    .task-body { flex: 1; }
-    .task-title { font-size: 15px; font-weight: 600; line-height: 1.4; }
-    .task-notes { font-size: 13px; color: #666; margin-top: 4px; white-space: pre-wrap; }
-    .task-due { font-size: 12px; color: #d97706; margin-top: 4px; }
-
-    /* 表單項目 */
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-    .input-ctrl {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    .btn-submit {
-      width: 100%;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 12px;
-      border-radius: 4px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-submit:active { opacity: 0.9; }
-  </style>
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/components.css">
 </head>
 
 <body>
   <div class="container">
-    <!-- Header -->
-    <header class="header">
-      <div>
-        <h1>救護業務日誌</h1>
-        <p>業務備忘錄與消防待辦管理</p>
+    <!-- 原版經典頂部 Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1 class="app-title">救護業務日誌</h1>
+        <p class="app-subtitle">業務備忘錄與消防待辦管理</p>
       </div>
-      <div id="statusBadge" class="badge">🟢 連線正常</div>
+      <div class="header-right">
+        <span id="networkBadge" class="status-badge online">🟢 連線正常</span>
+      </div>
     </header>
 
-    <!-- 首頁面 -->
-    <main id="pageHome">
-      <div class="grid">
-        <div class="btn-card" onclick="navTo('pageMemo')">
-          <div class="btn-icon">📝</div>
-          <div class="btn-title">1. 新增備忘</div>
+    <!-- 原版主頁面：三大卡片導航與待辦清單 -->
+    <section id="homeSection" class="app-section active">
+      <div class="menu-grid">
+        <div class="menu-card memo" data-target="memoSection">
+          <div class="card-icon">📝</div>
+          <div class="card-title">1. 新增備忘</div>
         </div>
-        <div class="btn-card" onclick="navTo('pageTask')">
-          <div class="btn-icon">☑️</div>
-          <div class="btn-title">2. 新增待辦</div>
+        <div class="menu-card task" data-target="taskSection">
+          <div class="card-icon">☑️</div>
+          <div class="card-title">2. 新增待辦</div>
         </div>
-        <div class="btn-card" onclick="navTo('pageSearch')">
-          <div class="btn-icon">🔍</div>
-          <div class="btn-title">3. 搜尋日誌</div>
+        <div class="menu-card search" data-target="searchSection">
+          <div class="card-icon">🔍</div>
+          <div class="card-title">3. 搜尋日誌</div>
         </div>
       </div>
 
-      <!-- 待辦清單面板 -->
-      <section class="panel">
+      <!-- 待辦事項 (消防) 清單面板 -->
+      <div class="content-card task-panel">
         <div class="panel-header">
           <span class="panel-title">📋 待辦事項 (消防)</span>
-          <button class="btn-text" onclick="loadTasks(true)">🔄 重新整理</button>
+          <div class="panel-actions">
+            <span id="pendingSyncBadge" class="sync-badge" style="display: none;"></span>
+            <button id="refreshTasksBtn" class="refresh-btn">🔄 重新整理</button>
+          </div>
         </div>
-        <div id="taskBox" class="task-list">
-          <div style="text-align:center; color:#888; padding:15px;">⏳ 載入「消防」待辦中...</div>
+        <div id="taskList" class="task-list">
+          <div class="loading-state">⏳ 載入中...</div>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
 
-    <!-- 1. 新增備忘頁面 -->
-    <section id="pageMemo" style="display:none;">
-      <div class="panel">
+    <!-- 原版 1. 新增備忘區塊 -->
+    <section id="memoSection" class="app-section">
+      <div class="content-card">
         <div class="panel-header">
-          <button class="btn-back" onclick="navTo('pageHome')">⬅️ 返回首頁</button>
-          <span class="panel-title">新增業務備忘</span>
+          <button class="btn-back">⬅️ 返回首頁</button>
+          <span class="panel-title" style="margin-left: 10px;">新增業務備忘</span>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="margin-top: 15px;">
           <label>分類</label>
-          <select id="memoCat" class="input-ctrl">
+          <select id="memoCategory" class="form-control">
             <option value="救護品管">救護品管</option>
             <option value="耗材裝備">耗材裝備</option>
             <option value="訓練演習">訓練演習</option>
@@ -194,127 +74,165 @@
         </div>
         <div class="form-group">
           <label>標題</label>
-          <input type="text" id="memoTitle" class="input-ctrl" placeholder="請輸入備忘標題">
+          <input type="text" id="memoTitle" class="form-control" placeholder="請輸入備忘標題">
         </div>
         <div class="form-group">
-          <label>內容</label>
-          <textarea id="memoContent" class="input-ctrl" rows="5" placeholder="請輸入詳細內容..."></textarea>
+          <label>詳細內容</label>
+          <textarea id="memoContent" class="form-control" rows="5" placeholder="請輸入備忘詳細內容..."></textarea>
         </div>
-        <button class="btn-submit" id="btnSaveMemo" onclick="handleSaveMemo()">儲存備忘</button>
+        <div class="form-group">
+          <label>附件上傳 (可選)</label>
+          <input type="file" id="memoFile" class="form-control" multiple>
+        </div>
+        <button id="saveMemoBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">儲存備忘</button>
       </div>
     </section>
 
-    <!-- 2. 新增待辦頁面 -->
-    <section id="pageTask" style="display:none;">
-      <div class="panel">
+    <!-- 原版 2. 新增待辦區塊 -->
+    <section id="taskSection" class="app-section">
+      <div class="content-card">
         <div class="panel-header">
-          <button class="btn-back" onclick="navTo('pageHome')">⬅️ 返回首頁</button>
-          <span class="panel-title">新增消防待辦事項</span>
+          <button class="btn-back">⬅️ 返回首頁</button>
+          <span class="panel-title" style="margin-left: 10px;">新增消防待辦事項</span>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="margin-top: 15px;">
           <label>待辦事項主旨</label>
-          <input type="text" id="taskTitle" class="input-ctrl" placeholder="例如：裝備妥善率回報">
+          <input type="text" id="newTaskTitle" class="form-control" placeholder="例如：裝備妥善率回報">
         </div>
         <div class="form-group">
           <label>備註說明</label>
-          <textarea id="taskNotes" class="input-ctrl" rows="3" placeholder="補充說明或交接重點..."></textarea>
+          <textarea id="newTaskNotes" class="form-control" rows="3" placeholder="補充說明或交接重點..."></textarea>
         </div>
         <div class="form-group">
-          <label>到期日</label>
-          <input type="date" id="taskDue" class="input-ctrl">
+          <label>預計完成日</label>
+          <input type="date" id="newTaskDue" class="form-control">
         </div>
-        <button class="btn-submit" id="btnSaveTask" onclick="handleSaveTask()">建立待辦</button>
+        <button id="saveTaskBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">建立待辦</button>
       </div>
     </section>
 
-    <!-- 3. 搜尋日誌頁面 -->
-    <section id="pageSearch" style="display:none;">
-      <div class="panel">
+    <!-- 原版 3. 搜尋日誌區塊 -->
+    <section id="searchSection" class="app-section">
+      <div class="content-card">
         <div class="panel-header">
-          <button class="btn-back" onclick="navTo('pageHome')">⬅️ 返回首頁</button>
-          <span class="panel-title">歷史日誌搜尋</span>
+          <button class="btn-back">⬅️ 返回首頁</button>
+          <span class="panel-title" style="margin-left: 10px;">歷史日誌搜尋</span>
         </div>
-        <div style="display:flex; gap:8px; margin-bottom:15px;">
-          <input type="text" id="searchKw" class="input-ctrl" placeholder="輸入關鍵字 (如：耗材、OHCA)..." style="flex:1;">
-          <select id="searchField" class="input-ctrl" style="width:110px;">
+        <div style="display: flex; gap: 8px; margin-top: 15px;">
+          <input type="text" id="searchKeyword" class="form-control" style="flex: 1;" placeholder="輸入關鍵字 (如：耗材、OHCA...)">
+          <select id="searchTargetField" class="form-control" style="width: 110px;">
             <option value="both">全部欄位</option>
             <option value="title">僅標題</option>
             <option value="content">僅內容</option>
           </select>
-          <button class="btn-submit" style="width:auto; padding:0 16px;" onclick="handleSearch()">搜尋</button>
+          <button id="searchBtn" class="btn btn-primary" style="white-space: nowrap;">搜尋</button>
         </div>
-        <div id="searchResultBox"></div>
+        <div id="searchResults" style="margin-top: 20px;"></div>
       </div>
     </section>
   </div>
 
   <script>
-    // 綁定正式 GAS 網址
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbx5tizEgp6f_7Rmx6jzorkDYddm-KwahOrjUNhwrDtN9Loq3ylnodUlV6cdMhneCVtw9Q/exechttps://script.google.com/macros/s/AKfycbx5tizEgp6f_7Rmx6jzorkDYddm-KwahOrjUNhwrDtN9Loq3ylnodUlV6cdMhneCVtw9Q/exec
-    function navTo(pageId) {
-      ['pageHome', 'pageMemo', 'pageTask', 'pageSearch'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = (id === pageId) ? 'block' : 'none';
+    // 已加入您提供的專屬 GAS 網址
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx5tizEgp6f_7Rmx6jzorkDYddm-KwahOrjUNhwrDtN9Loq3ylnodUlV6cdMhneCVtw9Q/exec";
+
+    // 頁面切換控制 (完全維持原版 active class 機制)
+    function switchSection(targetId) {
+      document.querySelectorAll('.app-section').forEach(sec => {
+        sec.classList.remove('active');
       });
+      const target = document.getElementById(targetId);
+      if (target) {
+        target.classList.add('active');
+      }
     }
 
-    // 0 秒秒開核心函式
+    // 綁定事件監聽器
+    document.addEventListener('DOMContentLoaded', () => {
+      // 三大卡片跳轉
+      document.querySelectorAll('.menu-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const target = card.getAttribute('data-target');
+          if (target) switchSection(target);
+        });
+      });
+
+      // 所有返回按鈕
+      document.querySelectorAll('.btn-back').forEach(btn => {
+        btn.addEventListener('click', () => switchSection('homeSection'));
+      });
+
+      // 重新整理
+      document.getElementById('refreshTasksBtn')?.addEventListener('click', () => loadTasks(true));
+
+      // 儲存備忘
+      document.getElementById('saveMemoBtn')?.addEventListener('click', handleSaveMemo);
+
+      // 建立待辦
+      document.getElementById('saveTaskBtn')?.addEventListener('click', handleSaveTask);
+
+      // 搜尋日誌
+      document.getElementById('searchBtn')?.addEventListener('click', handleSearch);
+
+      // 進入首頁自動載入「消防」待辦事項
+      loadTasks();
+    });
+
+    // 載入待辦事項：本機快取 0 秒立現 + 背景 POST 更新
     async function loadTasks(force = false) {
-      const box = document.getElementById('taskBox');
-      const badge = document.getElementById('statusBadge');
-      
-      // 第一階段：0 秒從本地快取直接畫出畫面，不等網路！
-      const localData = localStorage.getItem('fire_tasks_cache_v3');
-      let hasLocalData = false;
-      if (localData) {
-        try {
-          const parsed = JSON.parse(localData);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            renderTaskList(parsed);
-            hasLocalData = true;
-          }
-        } catch(e) {}
+      const listContainer = document.getElementById('taskList');
+      const badge = document.getElementById('networkBadge');
+
+      const cached = localStorage.getItem('original_tasks_cache');
+      if (cached && !force) {
+        try { renderTaskList(JSON.parse(cached)); } catch (e) {}
       }
 
-      if (!hasLocalData || force) {
-        badge.textContent = "🔄 同步中...";
-        badge.className = "badge syncing";
+      if (force || !cached) {
+        listContainer.innerHTML = '<div class="loading-state">⏳ 正在同步「消防」待辦...</div>';
       }
 
-      // 第二階段：背景使用 POST 直連 GAS 取最新資料
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'getTasks', forceRefresh: force })
+          body: JSON.stringify({ action: 'getTasks' })
         });
         const json = await res.json();
-        
+
         if (json && json.success) {
           renderTaskList(json.data);
-          localStorage.setItem('fire_tasks_cache_v3', JSON.stringify(json.data));
-          badge.textContent = "🟢 連線正常";
-          badge.className = "badge";
+          localStorage.setItem('original_tasks_cache', JSON.stringify(json.data));
+          if (badge) {
+            badge.textContent = "🟢 連線正常";
+            badge.className = "status-badge online";
+          }
+        } else {
+          if (!cached) listContainer.innerHTML = `<div class="loading-state" style="color:#c53030;">讀取失敗：${json.error || ''}</div>`;
         }
       } catch (err) {
-        badge.textContent = "🟡 離線模式";
-        badge.className = "badge offline";
-        if (!hasLocalData) {
-          box.innerHTML = '<div style="color:#c53030; text-align:center; padding:12px;">網路連線逾時，請重整重試</div>';
+        if (badge) {
+          badge.textContent = "🟡 離線模式";
+          badge.className = "status-badge offline";
+        }
+        if (!cached) {
+          listContainer.innerHTML = `<div class="loading-state" style="color:#c53030;">連線失敗：${err.message}</div>`;
         }
       }
     }
 
+    // 渲染待辦列表
     function renderTaskList(items) {
-      const box = document.getElementById('taskBox');
+      const container = document.getElementById('taskList');
+      if (!container) return;
       if (!items || items.length === 0) {
-        box.innerHTML = '<div style="text-align:center; color:#888; padding:12px;">🎉 目前無未完成的消防待辦事項</div>';
+        container.innerHTML = '<div class="loading-state">🎉 目前無未完成的消防待辦事項</div>';
         return;
       }
-      box.innerHTML = items.map(t => `
-        <div class="task-row" id="task-${t.id}">
-          <input type="checkbox" onchange="completeTask('${t.id}')">
-          <div class="task-body">
+      container.innerHTML = items.map(t => `
+        <div class="task-item" id="task-${t.id}">
+          <input type="checkbox" class="task-checkbox" onchange="completeTask('${t.id}')">
+          <div class="task-content">
             <div class="task-title">${escapeHtml(t.title)}</div>
             ${t.notes ? `<div class="task-notes">${escapeHtml(t.notes)}</div>` : ''}
             ${t.due ? `<div class="task-due">📅 到期：${escapeHtml(t.due)}</div>` : ''}
@@ -323,7 +241,8 @@
       `).join('');
     }
 
-    async function completeTask(taskId) {
+    // 標記完成待辦
+    window.completeTask = async function(taskId) {
       if (!confirm('確認此項待辦已完成？')) return;
       const el = document.getElementById(`task-${taskId}`);
       if (el) el.style.opacity = '0.3';
@@ -342,18 +261,19 @@
           if (el) el.style.opacity = '1';
         }
       } catch (e) {
-        alert('連線失敗');
+        alert('網路連線失敗');
         if (el) el.style.opacity = '1';
       }
-    }
+    };
 
+    // 儲存備忘
     async function handleSaveMemo() {
-      const cat = document.getElementById('memoCat').value;
+      const cat = document.getElementById('memoCategory').value;
       const title = document.getElementById('memoTitle').value.trim();
       const content = document.getElementById('memoContent').value.trim();
-      const btn = document.getElementById('btnSaveMemo');
+      const btn = document.getElementById('saveMemoBtn');
 
-      if (!title) return alert('請輸入標題');
+      if (!title) return alert('請輸入備忘標題');
       btn.disabled = true;
       btn.textContent = "儲存中...";
 
@@ -368,7 +288,7 @@
           alert('備忘已順利寫入日誌！');
           document.getElementById('memoTitle').value = '';
           document.getElementById('memoContent').value = '';
-          navTo('pageHome');
+          switchSection('homeSection');
         } else {
           alert('儲存失敗：' + (json.error || ''));
         }
@@ -380,11 +300,12 @@
       }
     }
 
+    // 儲存待辦
     async function handleSaveTask() {
-      const title = document.getElementById('taskTitle').value.trim();
-      const notes = document.getElementById('taskNotes').value.trim();
-      const due = document.getElementById('taskDue').value;
-      const btn = document.getElementById('btnSaveTask');
+      const title = document.getElementById('newTaskTitle').value.trim();
+      const notes = document.getElementById('newTaskNotes').value.trim();
+      const due = document.getElementById('newTaskDue').value;
+      const btn = document.getElementById('saveTaskBtn');
 
       if (!title) return alert('請輸入主旨');
       btn.disabled = true;
@@ -399,9 +320,9 @@
         const json = await res.json();
         if (json && json.success) {
           alert('已成功建立消防待辦！');
-          document.getElementById('taskTitle').value = '';
-          document.getElementById('taskNotes').value = '';
-          navTo('pageHome');
+          document.getElementById('newTaskTitle').value = '';
+          document.getElementById('newTaskNotes').value = '';
+          switchSection('homeSection');
           loadTasks(true);
         } else {
           alert('建立失敗：' + (json.error || ''));
@@ -414,13 +335,14 @@
       }
     }
 
+    // 搜尋日誌
     async function handleSearch() {
-      const kw = document.getElementById('searchKw').value.trim();
-      const field = document.getElementById('searchField').value;
-      const box = document.getElementById('searchResultBox');
+      const kw = document.getElementById('searchKeyword').value.trim();
+      const field = document.getElementById('searchTargetField').value;
+      const box = document.getElementById('searchResults');
 
       if (!kw) return alert('請輸入關鍵字');
-      box.innerHTML = '<div style="text-align:center; color:#888; padding:15px;">🔍 搜尋中...</div>';
+      box.innerHTML = '<div class="loading-state">🔍 搜尋中...</div>';
 
       try {
         const res = await fetch(GAS_URL, {
@@ -431,26 +353,23 @@
         const json = await res.json();
         if (json && json.success && json.data.length > 0) {
           box.innerHTML = json.data.map(r => `
-            <div style="border-bottom:1px solid #ddd; padding:10px 0;">
-              <div style="font-size:12px; color:#888;">${escapeHtml(r.time || '')}</div>
-              <div style="font-weight:600; font-size:15px; margin:4px 0;">${escapeHtml(r.title || '')}</div>
-              <div style="font-size:13px; color:#444;">${(r.lines || []).map(l => `<div>${escapeHtml(l)}</div>`).join('')}</div>
+            <div style="border-bottom: 1px solid #e5e5e0; padding: 12px 0;">
+              <div style="font-size: 12px; color: #888;">${escapeHtml(r.time || '')}</div>
+              <div style="font-weight: bold; font-size: 15px; margin: 4px 0;">${escapeHtml(r.title || '')}</div>
+              <div style="font-size: 13px; color: #444;">${(r.lines || []).map(l => `<div>${escapeHtml(l)}</div>`).join('')}</div>
             </div>
           `).join('');
         } else {
-          box.innerHTML = '<div style="text-align:center; color:#888; padding:15px;">查無符合日誌紀錄</div>';
+          box.innerHTML = '<div class="loading-state">查無符合日誌紀錄</div>';
         }
       } catch (e) {
-        box.innerHTML = '<div style="color:#c53030; text-align:center; padding:15px;">搜尋連線逾時</div>';
+        box.innerHTML = '<div class="loading-state" style="color:#c53030;">搜尋連線逾時</div>';
       }
     }
 
     function escapeHtml(str) {
       return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
-
-    // 啟動載入
-    document.addEventListener('DOMContentLoaded', () => loadTasks());
   </script>
 </body>
 </html>
