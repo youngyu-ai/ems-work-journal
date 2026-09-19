@@ -2,11 +2,25 @@
 export function renderTasks(tasks) {
   const container = document.getElementById('taskList');
   if (!container) return;
-  if (!tasks || tasks.length === 0) {
+
+  // 防呆處理：相容 { success: true, data: [...] } 或直接傳入 array
+  let taskArray = tasks;
+  if (tasks && typeof tasks === 'object' && !Array.isArray(tasks)) {
+    if (Array.isArray(tasks.data)) {
+      taskArray = tasks.data;
+    } else if (Array.isArray(tasks.items)) {
+      taskArray = tasks.items;
+    } else {
+      taskArray = [];
+    }
+  }
+
+  if (!taskArray || !Array.isArray(taskArray) || taskArray.length === 0) {
     container.innerHTML = '<div style="color:#666; font-size:14px; text-align:center; padding:10px;">🎉 目前無未完成的消防待辦事項</div>';
     return;
   }
-  container.innerHTML = tasks.map(t => `
+
+  container.innerHTML = taskArray.map(t => `
     <div class="task-item" id="task-${t.id}">
       <input type="checkbox" class="task-checkbox" onchange="window.completeTask('${t.id}')">
       <div class="task-content">
@@ -20,11 +34,19 @@ export function renderTasks(tasks) {
 
 // 渲染歷史日誌搜尋結果
 export function renderSearchResults(results, container) {
-  if (!results || results.length === 0) {
+  if (!container) return;
+
+  let resultArray = results;
+  if (results && typeof results === 'object' && !Array.isArray(results)) {
+    resultArray = Array.isArray(results.data) ? results.data : [];
+  }
+
+  if (!resultArray || !Array.isArray(resultArray) || resultArray.length === 0) {
     container.innerHTML = '<div style="color:#666; text-align:center; padding:16px;">查無符合條件之紀錄</div>';
     return;
   }
-  container.innerHTML = results.map((r, idx) => {
+
+  container.innerHTML = resultArray.map((r, idx) => {
     const textHtml = (r.lines || []).map(l => `<div>${escapeHtml(l)}</div>`).join('');
     const linksHtml = (r.links && r.links.length > 0)
       ? '<div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">' +
@@ -41,7 +63,7 @@ export function renderSearchResults(results, container) {
   }).join('');
 }
 
-// 更新網路連線狀態顯示（配合 SWR 搜尋與離線指示）
+// 更新網路狀態徽章
 export function setNetworkStatus(status, text) {
   const badge = document.getElementById('networkBadge');
   if (!badge) return;
@@ -49,7 +71,7 @@ export function setNetworkStatus(status, text) {
   badge.textContent = text || (status === 'online' ? '🟢 連線正常' : '🟡 離線模式');
 }
 
-// 跳脫 HTML 字元，防止 XSS 注入
+// 跳脫 HTML 字元
 export function escapeHtml(value) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;')
