@@ -47,9 +47,10 @@
       color: #2e7d32;
       font-weight: 500;
     }
+    .badge.syncing { background: #e3f2fd; color: #1565c0; }
     .badge.offline { background: #fff3e0; color: #e65100; }
 
-    /* 三大功能卡片 */
+    /* 三大卡片網格 */
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
     .btn-card {
       background: var(--card);
@@ -65,7 +66,7 @@
     .btn-icon { font-size: 28px; margin-bottom: 6px; }
     .btn-title { font-size: 14px; font-weight: 600; }
 
-    /* 區塊卡片 */
+    /* 區塊面板 */
     .panel {
       background: var(--card);
       border: 1px solid var(--border);
@@ -137,16 +138,16 @@
 <body>
   <div class="container">
     <!-- Header -->
-    <div class="header">
+    <header class="header">
       <div>
         <h1>救護業務日誌</h1>
         <p>業務備忘錄與消防待辦管理</p>
       </div>
       <div id="statusBadge" class="badge">🟢 連線正常</div>
-    </div>
+    </header>
 
     <!-- 首頁面 -->
-    <div id="pageHome">
+    <main id="pageHome">
       <div class="grid">
         <div class="btn-card" onclick="navTo('pageMemo')">
           <div class="btn-icon">📝</div>
@@ -163,7 +164,7 @@
       </div>
 
       <!-- 待辦清單面板 -->
-      <div class="panel">
+      <section class="panel">
         <div class="panel-header">
           <span class="panel-title">📋 待辦事項 (消防)</span>
           <button class="btn-text" onclick="loadTasks(true)">🔄 重新整理</button>
@@ -171,11 +172,11 @@
         <div id="taskBox" class="task-list">
           <div style="text-align:center; color:#888; padding:15px;">⏳ 載入「消防」待辦中...</div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
 
     <!-- 1. 新增備忘頁面 -->
-    <div id="pageMemo" style="display:none;">
+    <section id="pageMemo" style="display:none;">
       <div class="panel">
         <div class="panel-header">
           <button class="btn-back" onclick="navTo('pageHome')">⬅️ 返回首頁</button>
@@ -201,10 +202,10 @@
         </div>
         <button class="btn-submit" id="btnSaveMemo" onclick="handleSaveMemo()">儲存備忘</button>
       </div>
-    </div>
+    </section>
 
     <!-- 2. 新增待辦頁面 -->
-    <div id="pageTask" style="display:none;">
+    <section id="pageTask" style="display:none;">
       <div class="panel">
         <div class="panel-header">
           <button class="btn-back" onclick="navTo('pageHome')">⬅️ 返回首頁</button>
@@ -224,10 +225,10 @@
         </div>
         <button class="btn-submit" id="btnSaveTask" onclick="handleSaveTask()">建立待辦</button>
       </div>
-    </div>
+    </section>
 
     <!-- 3. 搜尋日誌頁面 -->
-    <div id="pageSearch" style="display:none;">
+    <section id="pageSearch" style="display:none;">
       <div class="panel">
         <div class="panel-header">
           <button class="btn-back" onclick="navTo('pageHome')">⬅️ 返回首頁</button>
@@ -244,14 +245,12 @@
         </div>
         <div id="searchResultBox"></div>
       </div>
-    </div>
+    </section>
   </div>
 
   <script>
-    // 綁定您提供的正式 GAS 網址
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbx5tizEgp6f_7Rmx6jzorkDYddm-KwahOrjUNhwrDtN9Loq3ylnodUlV6cdMhneCVtw9Q/exec";
-
-    // 頁面切換
+    // 綁定正式 GAS 網址
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx5tizEgp6f_7Rmx6jzorkDYddm-KwahOrjUNhwrDtN9Loq3ylnodUlV6cdMhneCVtw9Q/exechttps://script.google.com/macros/s/AKfycbx5tizEgp6f_7Rmx6jzorkDYddm-KwahOrjUNhwrDtN9Loq3ylnodUlV6cdMhneCVtw9Q/exec
     function navTo(pageId) {
       ['pageHome', 'pageMemo', 'pageTask', 'pageSearch'].forEach(id => {
         const el = document.getElementById(id);
@@ -259,47 +258,53 @@
       });
     }
 
-    // SWR 極速載入待辦清單：本地快取 0 秒立現 + 背景同步
+    // 0 秒秒開核心函式
     async function loadTasks(force = false) {
       const box = document.getElementById('taskBox');
       const badge = document.getElementById('statusBadge');
       
-      // 1. 本地快取秒開
-      const cached = localStorage.getItem('fire_tasks_cache');
-      if (cached) {
+      // 第一階段：0 秒從本地快取直接畫出畫面，不等網路！
+      const localData = localStorage.getItem('fire_tasks_cache_v3');
+      let hasLocalData = false;
+      if (localData) {
         try {
-          const cachedItems = JSON.parse(cached);
-          if (cachedItems && cachedItems.length > 0) {
-            renderTaskList(cachedItems);
+          const parsed = JSON.parse(localData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            renderTaskList(parsed);
+            hasLocalData = true;
           }
         } catch(e) {}
-      } else if (force) {
-        box.innerHTML = '<div style="text-align:center; color:#888; padding:15px;">⏳ 正在連線讀取「消防」待辦...</div>';
       }
 
-      // 2. 向 GAS 抓取最新資料
+      if (!hasLocalData || force) {
+        badge.textContent = "🔄 同步中...";
+        badge.className = "badge syncing";
+      }
+
+      // 第二階段：背景使用 POST 直連 GAS 取最新資料
       try {
-        const res = await fetch(`${GAS_URL}?action=getTasks&_t=${Date.now()}`, { 
-          method: 'GET', 
-          redirect: 'follow' 
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'getTasks', forceRefresh: force })
         });
         const json = await res.json();
+        
         if (json && json.success) {
           renderTaskList(json.data);
-          localStorage.setItem('fire_tasks_cache', JSON.stringify(json.data));
+          localStorage.setItem('fire_tasks_cache_v3', JSON.stringify(json.data));
           badge.textContent = "🟢 連線正常";
           badge.className = "badge";
-        } else {
-          if (!cached) box.innerHTML = `<div style="color:#c53030; text-align:center; padding:10px;">讀取失敗：${json.error || '後端錯誤'}</div>`;
         }
       } catch (err) {
         badge.textContent = "🟡 離線模式";
         badge.className = "badge offline";
-        if (!cached) box.innerHTML = '<div style="color:#c53030; text-align:center; padding:10px;">連線異常，請重新整理重試</div>';
+        if (!hasLocalData) {
+          box.innerHTML = '<div style="color:#c53030; text-align:center; padding:12px;">網路連線逾時，請重整重試</div>';
+        }
       }
     }
 
-    // 渲染待辦列表
     function renderTaskList(items) {
       const box = document.getElementById('taskBox');
       if (!items || items.length === 0) {
@@ -318,15 +323,14 @@
       `).join('');
     }
 
-    // 完成待辦
     async function completeTask(taskId) {
       if (!confirm('確認此項待辦已完成？')) return;
       const el = document.getElementById(`task-${taskId}`);
       if (el) el.style.opacity = '0.3';
+
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'completeTask', taskId: taskId })
         });
@@ -338,12 +342,11 @@
           if (el) el.style.opacity = '1';
         }
       } catch (e) {
-        alert('網路連線逾時');
+        alert('連線失敗');
         if (el) el.style.opacity = '1';
       }
     }
 
-    // 儲存備忘
     async function handleSaveMemo() {
       const cat = document.getElementById('memoCat').value;
       const title = document.getElementById('memoTitle').value.trim();
@@ -357,7 +360,6 @@
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'addJournal', category: cat, title: title, content: content })
         });
@@ -378,7 +380,6 @@
       }
     }
 
-    // 儲存待辦
     async function handleSaveTask() {
       const title = document.getElementById('taskTitle').value.trim();
       const notes = document.getElementById('taskNotes').value.trim();
@@ -392,7 +393,6 @@
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'addTask', title: title, notes: notes, due: due })
         });
@@ -414,7 +414,6 @@
       }
     }
 
-    // 搜尋日誌
     async function handleSearch() {
       const kw = document.getElementById('searchKw').value.trim();
       const field = document.getElementById('searchField').value;
@@ -424,9 +423,10 @@
       box.innerHTML = '<div style="text-align:center; color:#888; padding:15px;">🔍 搜尋中...</div>';
 
       try {
-        const res = await fetch(`${GAS_URL}?action=search&keyword=${encodeURIComponent(kw)}&targetField=${encodeURIComponent(field)}`, {
-          method: 'GET',
-          redirect: 'follow'
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'search', keyword: kw, targetField: field })
         });
         const json = await res.json();
         if (json && json.success && json.data.length > 0) {
@@ -449,8 +449,8 @@
       return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // 網頁載入時自動讀取待辦
-    window.addEventListener('DOMContentLoaded', () => loadTasks());
+    // 啟動載入
+    document.addEventListener('DOMContentLoaded', () => loadTasks());
   </script>
 </body>
 </html>
