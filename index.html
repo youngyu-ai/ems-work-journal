@@ -7,10 +7,10 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/components.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
-  </head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+</head>
 
-  <body><body>
+<body>
   <div class="container">
     <!-- 原版經典 Header -->
     <div class="header">
@@ -19,179 +19,129 @@
           <h1>救護業務日誌</h1>
           <p>業務備忘錄與消防待辦管理</p>
         </div>
-        <div class="sync-indicator" id="syncStatus">
-          <span class="status-dot online"></span>
-          <span class="status-text">連線正常</span>
-          <span class="badge-pending" id="pendingCount" style="display:none;">0 待同步</span>
+        <div id="networkBadge" class="status-badge online">🟢 連線正常</div>
+      </div>
+    </div>
+
+    <!-- 主頁面：功能導航卡片 -->
+    <section id="homeSection" class="app-section active">
+      <div class="nav-grid">
+        <div class="nav-card memo" data-target="memoSection">
+          <div class="nav-icon">📝</div>
+          <div class="nav-title">1. 新增備忘</div>
+        </div>
+        <div class="nav-card task" data-target="taskSection">
+          <div class="nav-icon">☑️</div>
+          <div class="nav-title">2. 新增待辦</div>
+        </div>
+        <div class="nav-card search" data-target="searchSection">
+          <div class="nav-icon">🔍</div>
+          <div class="nav-title">3. 搜尋日誌</div>
         </div>
       </div>
-    </div>
 
-    <!-- PWA 版本更新提示橫幅 -->
-    <div id="updateBanner" class="update-banner" style="display:none;">
-      <span>✨ 系統已有新版本更新！</span>
-      <button id="btnApplyUpdate" class="btn-update">立即套用</button>
-    </div>
-
-    <!-- 首頁區域（100% 還原原版 3 個按鈕 + 待辦事項清單） -->
-    <div id="homeView">
-      <div class="home-menu">
-        <button class="btn-main btn-memo" onclick="showSection('memo')">
-          <span class="btn-icon">📝</span>
-          <span>1. 新增備忘</span>
-        </button>
-        <button class="btn-main btn-task" onclick="showSection('task')">
-          <span class="btn-icon">☑️</span>
-          <span>2. 新增待辦</span>
-        </button>
-        <button class="btn-main btn-search" onclick="showSection('search')">
-          <span class="btn-icon">🔍</span>
-          <span>3. 搜尋日誌</span>
-        </button>
-      </div>
-
-      <!-- 未完成待辦清單 -->
-      <div class="task-section">
-        <div class="task-header">
-          <h3>📋 待辦事項 (消防)</h3>
-          <span class="btn-refresh" onclick="loadTasks()">🔄 重新整理</span>
+      <!-- 待辦事項 (消防) 清單區塊 -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: bold; font-size: 16px;">📋 待辦事項 (消防)</span>
+          <span id="pendingSyncBadge" style="display: none; font-size: 12px; color: #d97706;"></span>
+          <button id="refreshTasksBtn" class="btn-text" style="background: none; border: none; color: #2563eb; cursor: pointer; font-size: 14px;">🔄 重新整理</button>
         </div>
-        <div id="taskList">載入待辦事項中...</div>
-      </div>
-    </div>
-
-    <!-- 1. 新增備忘錄區塊 -->
-    <div id="section-memo" class="card">
-      <div class="card-header">
-        <h3 class="card-title">新增日誌備忘</h3>
-        <button class="btn-back" onclick="goHome()">回首頁</button>
-      </div>
-
-      <form id="memoForm">
-        <label>發布日期與時間：</label>
-        <input type="datetime-local" id="memoDate" required>
-
-        <label>標題：</label>
-        <input type="text" id="memoTitle" placeholder="例如：到院前啟動輸血計畫、AED定期檢查" required>
-
-        <label>快捷標籤（可多選）：</label>
-        <div class="tag-group" id="tagList">
-          <span class="tag-chip">完成事項</span>
-          <span class="tag-chip">器材</span>
-          <span class="tag-chip">耗材</span>
-          <span class="tag-chip">交辦事項</span>
-          <span class="tag-chip">公文</span>
-          <span class="tag-chip">SOP</span>
-          <span class="tag-chip">案例教育</span>
+        <div id="taskList" class="task-list" style="margin-top: 12px;">
+          <div style="color: #666; font-size: 14px; text-align: center; padding: 10px;">⏳ 載入中...</div>
         </div>
-
-        <label style="margin-top: 10px; font-weight: normal; font-size: 13px; color: #5f6368;">或手動輸入自訂標籤（多個標籤請用空格或逗號分開）：</label>
-        <input type="text" id="customTags" placeholder="例如：教育訓練 品管 骨針">
-
-        <label>內容說明：</label>
-        <textarea id="memoContent" rows="3" placeholder="輸入事項細節..."></textarea>
-
-        <label>附加檔案 / 簡報 / PDF / 影片（可多選）：</label>
-        <div class="file-actions">
-          <input type="file" id="filePicker" multiple accept="*/*,.html,.htm,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,image/*,video/*" style="display:none;">
-          <div class="btn-file-add" id="btnPickFile">➕ 選擇檔案 / 簡報 / 照片</div>
-        </div>
-        <div id="selectedFileList" class="file-list"></div>
-        <div style="font-size: 12px; color: #5f6368; margin-top: 6px;">※ 支援所有格式；大於 7MB 檔案將自動標註「Upload Date」並存入「倉庫/年份」資料夾。</div>
-
-        <button type="submit" class="submit-btn" id="btnSubmitMemo">儲存並發布至雲端</button>
-      </form>
-    </div>
-
-    <!-- 2. 新增待辦事項區塊 -->
-    <div id="section-task" class="card">
-      <div class="card-header">
-        <h3 class="card-title">新增待辦事項 (消防)</h3>
-        <button class="btn-back" onclick="goHome()">回首頁</button>
       </div>
+    </section>
 
-      <label>待辦事項標題：</label>
-      <input type="text" id="taskTitle" placeholder="例如：腹部墊標籤製作、耗材盤點">
+    <!-- 1. 新增備忘區塊 -->
+    <section id="memoSection" class="app-section">
+      <div class="card">
+        <div class="card-header">
+          <button class="btn-back">⬅️ 返回首頁</button>
+          <span style="font-weight: bold; margin-left: 10px;">新增業務備忘</span>
+        </div>
+        <div class="form-group" style="margin-top: 15px;">
+          <label>分類</label>
+          <select id="memoCategory" class="form-control">
+            <option value="救護品管">救護品管</option>
+            <option value="耗材裝備">耗材裝備</option>
+            <option value="訓練演習">訓練演習</option>
+            <option value="分隊庶務">分隊庶務</option>
+            <option value="其他業務">其他業務</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>標題</label>
+          <input type="text" id="memoTitle" class="form-control" placeholder="請輸入備忘標題">
+        </div>
+        <div class="form-group">
+          <label>詳細內容</label>
+          <textarea id="memoContent" class="form-control" rows="5" placeholder="請輸入備忘詳細內容..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>附件上傳 (可選)</label>
+          <input type="file" id="memoFile" class="form-control" multiple>
+        </div>
+        <button id="saveMemoBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">儲存備忘</button>
+      </div>
+    </section>
 
-      <label>到期日期（選填）：</label>
-      <input type="date" id="taskDue">
-
-      <label>備註說明（選填）：</label>
-      <textarea id="taskNotes" rows="2" placeholder="詳細備註..."></textarea>
-
-      <button type="button" class="submit-btn" style="background: var(--warning);" id="btnSubmitTask">加入待辦事項</button>
-    </div>
+    <!-- 2. 新增待辦區塊 -->
+    <section id="taskSection" class="app-section">
+      <div class="card">
+        <div class="card-header">
+          <button class="btn-back">⬅️ 返回首頁</button>
+          <span style="font-weight: bold; margin-left: 10px;">新增消防待辦事項</span>
+        </div>
+        <div class="form-group" style="margin-top: 15px;">
+          <label>待辦事項主旨</label>
+          <input type="text" id="newTaskTitle" class="form-control" placeholder="例如：裝備妥善率回報">
+        </div>
+        <div class="form-group">
+          <label>備註說明</label>
+          <textarea id="newTaskNotes" class="form-control" rows="3" placeholder="補充說明或交接重點..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>預計完成日</label>
+          <input type="date" id="newTaskDue" class="form-control">
+        </div>
+        <button id="saveTaskBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">建立待辦</button>
+      </div>
+    </section>
 
     <!-- 3. 搜尋日誌區塊 -->
-    <div id="section-search" class="card">
-      <div class="card-header">
-        <h3 class="card-title">搜尋歷史日誌</h3>
-        <button class="btn-back" onclick="goHome()">回首頁</button>
-      </div>
-
-      <label>關鍵字 / 標籤（選填）：</label>
-      <input type="text" id="searchKeyword" placeholder="輸入標題、標籤或關鍵字（如：#公文、SOP）">
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
-        <div>
-          <label style="font-size: 13px; color: #5f6368; margin-top: 4px;">開始日期（選填）：</label>
-          <input type="date" id="searchStartDate">
+    <section id="searchSection" class="app-section">
+      <div class="card">
+        <div class="card-header">
+          <button class="btn-back">⬅️ 返回首頁</button>
+          <span style="font-weight: bold; margin-left: 10px;">歷史日誌搜尋</span>
         </div>
-        <div>
-          <label style="font-size: 13px; color: #5f6368; margin-top: 4px;">結束日期（選填）：</label>
-          <input type="date" id="searchEndDate">
+        <div style="display: flex; gap: 8px; margin-top: 15px;">
+          <input type="text" id="searchKeyword" class="form-control" style="flex: 1;" placeholder="輸入關鍵字 (如：耗材、OHCA...)">
+          <select id="searchTargetField" class="form-control" style="width: 110px;">
+            <option value="both">全部欄位</option>
+            <option value="title">僅標題</option>
+            <option value="content">僅內容</option>
+          </select>
+          <button id="searchBtn" class="btn btn-primary" style="white-space: nowrap;">搜尋</button>
         </div>
+        <div id="searchResults" style="margin-top: 20px;"></div>
       </div>
-      <div style="font-size: 12px; color: #5f6368; margin-top: 6px;">
-        ※ 日期會以日誌中的實際日期進行篩選；可單獨使用開始日期或結束日期，也可兩者同時使用。
-      </div>
-
-      <div style="display: flex; gap: 10px; margin-top: 16px;">
-        <button type="button" class="submit-btn" style="background: var(--success); flex: 2; margin-top: 0;" id="btnExecuteSearch">開始搜尋 (SWR 即時讀取)</button>
-        <button type="button" class="submit-btn" style="background: #e0e0e0; color: #333; flex: 1; margin-top: 0;" id="btnClearSearch">重置條件</button>
-      </div>
-
-      <div id="searchResultList" style="margin-top: 16px;"></div>
-    </div>
+    </section>
   </div>
 
-  <script>
-    // 頁面路由切換：直接內嵌於骨架，保證 100% 點擊立刻反應，不依賴任何外部檔案
-    function showSection(type) {
-      var home = document.getElementById('homeView');
-      var memo = document.getElementById('section-memo');
-      var task = document.getElementById('section-task');
-      var search = document.getElementById('section-search');
-      if (home) home.style.display = 'none';
-      if (memo) memo.style.display = type === 'memo' ? 'block' : 'none';
-      if (task) task.style.display = type === 'task' ? 'block' : 'none';
-      if (search) search.style.display = type === 'search' ? 'block' : 'none';
-      window.scrollTo(0, 0);
-    }
-
-    function goHome() {
-      var home = document.getElementById('homeView');
-      var memo = document.getElementById('section-memo');
-      var task = document.getElementById('section-task');
-      var search = document.getElementById('section-search');
-      if (home) home.style.display = 'block';
-      if (memo) memo.style.display = 'none';
-      if (task) task.style.display = 'none';
-      if (search) search.style.display = 'none';
-      if (typeof window.loadTasks === 'function') window.loadTasks();
-      window.scrollTo(0, 0);
-    }
-
-    // 快捷標籤點擊即時切換高亮
-    document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('.tag-chip').forEach(function(chip) {
-        chip.addEventListener('click', function() {
-          chip.classList.toggle('active');
-        });
-      });
-    });
-  </script>
-
+  <!-- 主邏輯 ES Module 載入 -->
   <script type="module" src="js/app.js"></script>
+
+  <!-- Service Worker 註冊 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('SW 註冊成功:', reg.scope))
+          .catch(err => console.error('SW 註冊失敗:', err));
+      });
+    }
+  </script>
 </body>
 </html>
