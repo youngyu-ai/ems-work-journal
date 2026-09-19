@@ -153,6 +153,43 @@
     </div>
   </div>
 
+  <script>
+    // 頁面路由切換：直接內嵌於骨架，保證 100% 點擊立刻反應，不依賴任何外部檔案
+    function showSection(type) {
+      var home = document.getElementById('homeView');
+      var memo = document.getElementById('section-memo');
+      var task = document.getElementById('section-task');
+      var search = document.getElementById('section-search');
+      if (home) home.style.display = 'none';
+      if (memo) memo.style.display = type === 'memo' ? 'block' : 'none';
+      if (task) task.style.display = type === 'task' ? 'block' : 'none';
+      if (search) search.style.display = type === 'search' ? 'block' : 'none';
+      window.scrollTo(0, 0);
+    }
+
+    function goHome() {
+      var home = document.getElementById('homeView');
+      var memo = document.getElementById('section-memo');
+      var task = document.getElementById('section-task');
+      var search = document.getElementById('section-search');
+      if (home) home.style.display = 'block';
+      if (memo) memo.style.display = 'none';
+      if (task) task.style.display = 'none';
+      if (search) search.style.display = 'none';
+      if (typeof window.loadTasks === 'function') window.loadTasks();
+      window.scrollTo(0, 0);
+    }
+
+    // 快捷標籤點擊即時切換高亮
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.tag-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+          chip.classList.toggle('active');
+        });
+      });
+    });
+  </script>
+
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
