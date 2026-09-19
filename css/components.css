@@ -1,0 +1,65 @@
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.tag-chip {
+  padding: 6px 12px;
+  background: #eeece4;
+  color: #62685a;
+  border: 1px solid #ddd9ce;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tag-chip.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.file-drop-zone {
+  border: 1px dashed #bdb9ad;
+  background: #f7f5ef;
+  border-radius: 4px;
+  padding: 14px;
+  text-align: center;
+}
+
+.btn-add-file {
+  background: #e6e2d8;
+  border: 1px solid #cfcac0;
+  padding: 8px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #4a5148;
+}
+
+.date-range-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.loading-box {
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.error-box {
+  background: #faeceb;
+  border: 1px solid #f1bab7;
+  color: var(--ems-red);
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-top: 10px;
+}
