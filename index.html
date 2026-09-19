@@ -12,55 +12,52 @@
 
 <body>
   <div class="container">
-    <!-- 原版經典 Header -->
-    <div class="header">
-      <div class="header-content">
-        <div>
-          <h1>救護業務日誌</h1>
-          <p>業務備忘錄與消防待辦管理</p>
-        </div>
-        <div id="networkBadge" class="status-badge online">🟢 連線正常</div>
+    <!-- 原版頂部 Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1 class="app-title">救護業務日誌</h1>
+        <p class="app-subtitle">業務備忘錄與消防待辦管理</p>
       </div>
-    </div>
+      <div class="header-right">
+        <span id="networkBadge" class="status-badge online">🟢 連線正常</span>
+      </div>
+    </header>
 
-    <!-- 原版主頁面：三大功能導航卡片 -->
+    <!-- 原版主頁面：還原為 ul / li 結構 -->
     <section id="homeSection" class="app-section active">
-      <div class="nav-grid">
-        <div class="nav-card memo" data-target="memoSection">
-          <div class="nav-icon">📝</div>
-          <div class="nav-title">1. 新增備忘</div>
-        </div>
-        <div class="nav-card task" data-target="taskSection">
-          <div class="nav-icon">☑️</div>
-          <div class="nav-title">2. 新增待辦</div>
-        </div>
-        <div class="nav-card search" data-target="searchSection">
-          <div class="nav-icon">🔍</div>
-          <div class="nav-title">3. 搜尋日誌</div>
-        </div>
-      </div>
+      <ul class="menu-grid" style="list-style: none; padding: 0; margin: 0 0 20px 0;">
+        <li class="menu-card memo" data-target="memoSection">
+          <div class="card-icon">📝</div>
+          <div class="card-title">1. 新增備忘</div>
+        </li>
+        <li class="menu-card task" data-target="taskSection">
+          <div class="card-icon">☑️</div>
+          <div class="card-title">2. 新增待辦</div>
+        </li>
+        <li class="menu-card search" data-target="searchSection">
+          <div class="card-icon">🔍</div>
+          <div class="card-title">3. 搜尋日誌</div>
+        </li>
+      </ul>
 
-      <!-- 待辦事項 (消防) 清單面板 -->
-      <div class="card" style="margin-top: 20px;">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-weight: bold; font-size: 16px;">📋 待辦事項 (消防)</span>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span id="pendingSyncBadge" style="display: none; font-size: 12px; color: #d97706;"></span>
-            <button id="refreshTasksBtn" class="btn-text" style="background: none; border: none; color: #2563eb; cursor: pointer; font-size: 14px;">🔄 重新整理</button>
-          </div>
+      <!-- 待辦事項 (消防) 面板 -->
+      <div class="content-card task-panel">
+        <div class="panel-header">
+          <span class="panel-title">📋 待辦事項 (消防)</span>
+          <button id="refreshTasksBtn" class="refresh-btn">🔄 重新整理</button>
         </div>
-        <div id="taskList" class="task-list" style="margin-top: 12px;">
-          <div style="color: #666; font-size: 14px; text-align: center; padding: 10px;">⏳ 載入中...</div>
+        <div id="taskList" class="task-list">
+          <div class="loading-state">⏳ 載入中...</div>
         </div>
       </div>
     </section>
 
-    <!-- 原版 1. 新增備忘區塊 -->
-    <section id="memoSection" class="app-section">
-      <div class="card">
-        <div class="card-header">
+    <!-- 1. 新增備忘 -->
+    <section id="memoSection" class="app-section" style="display: none;">
+      <div class="content-card">
+        <div class="panel-header">
           <button class="btn-back">⬅️ 返回首頁</button>
-          <span style="font-weight: bold; margin-left: 10px;">新增業務備忘</span>
+          <span class="panel-title" style="margin-left: 10px;">新增業務備忘</span>
         </div>
         <div class="form-group" style="margin-top: 15px;">
           <label>分類</label>
@@ -78,22 +75,18 @@
         </div>
         <div class="form-group">
           <label>詳細內容</label>
-          <textarea id="memoContent" class="form-control" rows="5" placeholder="請輸入備忘詳細內容..."></textarea>
-        </div>
-        <div class="form-group">
-          <label>附件上傳 (可選)</label>
-          <input type="file" id="memoFile" class="form-control" multiple>
+          <textarea id="memoContent" class="form-control" rows="5" placeholder="請輸入詳細內容..."></textarea>
         </div>
         <button id="saveMemoBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">儲存備忘</button>
       </div>
     </section>
 
-    <!-- 原版 2. 新增待辦區塊 -->
-    <section id="taskSection" class="app-section">
-      <div class="card">
-        <div class="card-header">
+    <!-- 2. 新增待辦 -->
+    <section id="taskSection" class="app-section" style="display: none;">
+      <div class="content-card">
+        <div class="panel-header">
           <button class="btn-back">⬅️ 返回首頁</button>
-          <span style="font-weight: bold; margin-left: 10px;">新增消防待辦事項</span>
+          <span class="panel-title" style="margin-left: 10px;">新增消防待辦事項</span>
         </div>
         <div class="form-group" style="margin-top: 15px;">
           <label>待辦事項主旨</label>
@@ -111,12 +104,12 @@
       </div>
     </section>
 
-    <!-- 原版 3. 搜尋日誌區塊 -->
-    <section id="searchSection" class="app-section">
-      <div class="card">
-        <div class="card-header">
+    <!-- 3. 搜尋日誌 -->
+    <section id="searchSection" class="app-section" style="display: none;">
+      <div class="content-card">
+        <div class="panel-header">
           <button class="btn-back">⬅️ 返回首頁</button>
-          <span style="font-weight: bold; margin-left: 10px;">歷史日誌搜尋</span>
+          <span class="panel-title" style="margin-left: 10px;">歷史日誌搜尋</span>
         </div>
         <div style="display: flex; gap: 8px; margin-top: 15px;">
           <input type="text" id="searchKeyword" class="form-control" style="flex: 1;" placeholder="輸入關鍵字 (如：耗材、OHCA...)">
@@ -133,57 +126,38 @@
   </div>
 
   <script>
-    // 正式 GAS API 網址
     const GAS_URL = "https://script.google.com/macros/s/AKfycbx5tizEgp6f_7Rmx6jzorkDYddm-KwahOrjUNhwrDtN9Loq3ylnodUlV6cdMhneCVtw9Q/exec";
 
-    // 切換分頁控制
     function switchSection(targetId) {
-      document.querySelectorAll('.app-section').forEach(sec => {
-        sec.classList.remove('active');
-        sec.style.display = 'none'; // 雙重保證其他分頁絕對隱藏
+      const sections = ['homeSection', 'memoSection', 'taskSection', 'searchSection'];
+      sections.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = (id === targetId) ? 'block' : 'none';
       });
-      const target = document.getElementById(targetId);
-      if (target) {
-        target.classList.add('active');
-        target.style.display = 'block';
-      }
     }
 
-    // 初始化事件綁定
     document.addEventListener('DOMContentLoaded', () => {
-      // 確保一開始只顯示首頁
       switchSection('homeSection');
 
-      // 導航卡片點擊切換
-      document.querySelectorAll('.nav-card').forEach(card => {
-        card.addEventListener('click', () => {
-          const target = card.getAttribute('data-target');
+      document.querySelectorAll('.menu-card, .menu-grid li').forEach(item => {
+        item.addEventListener('click', () => {
+          const target = item.getAttribute('data-target');
           if (target) switchSection(target);
         });
       });
 
-      // 返回首頁按鈕
       document.querySelectorAll('.btn-back').forEach(btn => {
         btn.addEventListener('click', () => switchSection('homeSection'));
       });
 
-      // 重新整理
       document.getElementById('refreshTasksBtn')?.addEventListener('click', () => loadTasks(true));
-
-      // 儲存備忘
       document.getElementById('saveMemoBtn')?.addEventListener('click', handleSaveMemo);
-
-      // 建立待辦
       document.getElementById('saveTaskBtn')?.addEventListener('click', handleSaveTask);
-
-      // 搜尋日誌
       document.getElementById('searchBtn')?.addEventListener('click', handleSearch);
 
-      // 自動載入消防待辦
       loadTasks();
     });
 
-    // 載入待辦事項
     async function loadTasks(force = false) {
       const listContainer = document.getElementById('taskList');
       const badge = document.getElementById('networkBadge');
@@ -194,7 +168,7 @@
       }
 
       if (force || !cached) {
-        listContainer.innerHTML = '<div style="color: #666; font-size: 14px; text-align: center; padding: 10px;">⏳ 載入中...</div>';
+        listContainer.innerHTML = '<div class="loading-state">⏳ 載入中...</div>';
       }
 
       try {
@@ -213,7 +187,7 @@
             badge.className = "status-badge online";
           }
         } else {
-          if (!cached) listContainer.innerHTML = `<div style="color: #c53030; text-align: center; padding: 10px;">載入失敗：${json.error || ''}</div>`;
+          if (!cached) listContainer.innerHTML = `<div class="loading-state" style="color:#c53030;">載入失敗：${json.error || ''}</div>`;
         }
       } catch (err) {
         if (badge) {
@@ -221,32 +195,30 @@
           badge.className = "status-badge offline";
         }
         if (!cached) {
-          listContainer.innerHTML = `<div style="color: #c53030; text-align: center; padding: 10px;">連線失敗：${err.message}</div>`;
+          listContainer.innerHTML = `<div class="loading-state" style="color:#c53030;">連線失敗：${err.message}</div>`;
         }
       }
     }
 
-    // 渲染待辦列表
     function renderTaskList(items) {
       const container = document.getElementById('taskList');
       if (!container) return;
       if (!items || items.length === 0) {
-        container.innerHTML = '<div style="color: #666; font-size: 14px; text-align: center; padding: 10px;">🎉 目前無未完成的消防待辦事項</div>';
+        container.innerHTML = '<div class="loading-state">🎉 目前無未完成的消防待辦事項</div>';
         return;
       }
       container.innerHTML = items.map(t => `
-        <div class="task-item" id="task-${t.id}" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee;">
-          <input type="checkbox" onchange="completeTask('${t.id}')" style="margin-top: 3px; cursor: pointer;">
-          <div style="flex: 1;">
-            <div style="font-size: 15px; font-weight: 500; color: #333;">${escapeHtml(t.title)}</div>
-            ${t.notes ? `<div style="font-size: 13px; color: #666; margin-top: 3px; white-space: pre-wrap;">${escapeHtml(t.notes)}</div>` : ''}
-            ${t.due ? `<div style="font-size: 12px; color: #d97706; margin-top: 3px;">📅 ${escapeHtml(t.due)}</div>` : ''}
+        <div class="task-item" id="task-${t.id}">
+          <input type="checkbox" class="task-checkbox" onchange="completeTask('${t.id}')">
+          <div class="task-content">
+            <div class="task-title">${escapeHtml(t.title)}</div>
+            ${t.notes ? `<div class="task-notes">${escapeHtml(t.notes)}</div>` : ''}
+            ${t.due ? `<div class="task-due">📅 到期：${escapeHtml(t.due)}</div>` : ''}
           </div>
         </div>
       `).join('');
     }
 
-    // 完成待辦
     window.completeTask = async function(taskId) {
       if (!confirm('確認此項待辦已完成？')) return;
       const el = document.getElementById(`task-${taskId}`);
@@ -271,14 +243,13 @@
       }
     };
 
-    // 儲存備忘
     async function handleSaveMemo() {
       const cat = document.getElementById('memoCategory').value;
       const title = document.getElementById('memoTitle').value.trim();
       const content = document.getElementById('memoContent').value.trim();
       const btn = document.getElementById('saveMemoBtn');
 
-      if (!title) return alert('請輸入備忘標題');
+      if (!title) return alert('請輸入標題');
       btn.disabled = true;
       btn.textContent = "儲存中...";
 
@@ -305,7 +276,6 @@
       }
     }
 
-    // 儲存待辦
     async function handleSaveTask() {
       const title = document.getElementById('newTaskTitle').value.trim();
       const notes = document.getElementById('newTaskNotes').value.trim();
@@ -340,14 +310,13 @@
       }
     }
 
-    // 搜尋日誌
     async function handleSearch() {
       const kw = document.getElementById('searchKeyword').value.trim();
       const field = document.getElementById('searchTargetField').value;
       const box = document.getElementById('searchResults');
 
       if (!kw) return alert('請輸入關鍵字');
-      box.innerHTML = '<div style="color: #666; text-align: center; padding: 15px;">🔍 搜尋中...</div>';
+      box.innerHTML = '<div class="loading-state">🔍 搜尋中...</div>';
 
       try {
         const res = await fetch(GAS_URL, {
@@ -365,10 +334,10 @@
             </div>
           `).join('');
         } else {
-          box.innerHTML = '<div style="color: #666; text-align: center; padding: 15px;">查無符合日誌紀錄</div>';
+          box.innerHTML = '<div class="loading-state">查無符合日誌紀錄</div>';
         }
       } catch (e) {
-        box.innerHTML = '<div style="color: #c53030; text-align: center; padding: 15px;">搜尋連線逾時</div>';
+        box.innerHTML = '<div class="loading-state" style="color:#c53030;">搜尋連線逾時</div>';
       }
     }
 
