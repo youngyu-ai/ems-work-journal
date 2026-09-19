@@ -41,7 +41,15 @@ export function renderSearchResults(results, container) {
   }).join('');
 }
 
-// 跳脫 HTML 字元
+// 更新網路連線狀態顯示（配合 SWR 搜尋與離線指示）
+export function setNetworkStatus(status, text) {
+  const badge = document.getElementById('networkBadge');
+  if (!badge) return;
+  badge.className = `status-badge ${status}`;
+  badge.textContent = text || (status === 'online' ? '🟢 連線正常' : '🟡 離線模式');
+}
+
+// 跳脫 HTML 字元，防止 XSS 注入
 export function escapeHtml(value) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;')
