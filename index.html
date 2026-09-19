@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>救護業務日誌</title>
   <link rel="manifest" href="manifest.json">
-  <!-- 內嵌 Favicon：徹底解決 favicon.ico 404 問題 -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/components.css">
@@ -13,55 +12,55 @@
 
 <body>
   <div class="container">
-    <!-- 原版經典 Header -->
-    <header class="app-header">
-      <div class="header-left">
-        <h1 class="app-title">救護業務日誌</h1>
-        <p class="app-subtitle">業務備忘錄與消防待辦管理</p>
+    <!-- 原版經典頂部 -->
+    <div class="header">
+      <div class="header-content">
+        <div>
+          <h1>救護業務日誌</h1>
+          <p>業務備忘錄與消防待辦管理</p>
+        </div>
+        <div id="networkBadge" class="status-badge online">🟢 連線正常</div>
       </div>
-      <div class="header-right">
-        <span id="networkBadge" class="status-badge online">🟢 連線正常</span>
-      </div>
-    </header>
+    </div>
 
-    <!-- 主頁面：三大功能按鈕卡片 -->
-    <section id="homeSection" class="app-section active">
-      <div class="menu-grid">
-        <div class="menu-card memo" data-target="memoSection">
-          <div class="card-icon">📝</div>
-          <div class="card-title">1. 新增備忘</div>
+    <!-- 首頁：三大功能大卡片 -->
+    <div id="homeSection" class="app-section active">
+      <div class="nav-grid">
+        <div class="nav-card memo" id="btnGoMemo">
+          <div class="nav-icon">📝</div>
+          <div class="nav-title">1. 新增備忘</div>
         </div>
-        <div class="menu-card task" data-target="taskSection">
-          <div class="card-icon">☑️</div>
-          <div class="card-title">2. 新增待辦</div>
+        <div class="nav-card task" id="btnGoTask">
+          <div class="nav-icon">☑️</div>
+          <div class="nav-title">2. 新增待辦</div>
         </div>
-        <div class="menu-card search" data-target="searchSection">
-          <div class="card-icon">🔍</div>
-          <div class="card-title">3. 搜尋日誌</div>
+        <div class="nav-card search" id="btnGoSearch">
+          <div class="nav-icon">🔍</div>
+          <div class="nav-title">3. 搜尋日誌</div>
         </div>
       </div>
 
-      <!-- 待辦事項 (消防) 清單面板 -->
-      <div class="content-card task-panel">
-        <div class="panel-header">
-          <span class="panel-title">📋 待辦事項 (消防)</span>
-          <div class="panel-actions">
-            <span id="pendingSyncBadge" class="sync-badge" style="display: none;"></span>
-            <button id="refreshTasksBtn" class="refresh-btn">🔄 重新整理</button>
+      <!-- 待辦事項清單面板 -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: bold; font-size: 16px;">📋 待辦事項 (消防)</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="pendingSyncBadge" style="display: none; font-size: 12px; color: #d97706;"></span>
+            <button id="refreshTasksBtn" style="background: none; border: none; color: #2563eb; cursor: pointer; font-size: 14px;">🔄 重新整理</button>
           </div>
         </div>
-        <div id="taskList" class="task-list">
-          <div class="loading-state">⏳ 載入中...</div>
+        <div id="taskList" class="task-list" style="margin-top: 12px;">
+          <div style="color: #666; font-size: 14px; text-align: center; padding: 12px;">⏳ 載入中...</div>
         </div>
       </div>
-    </section>
+    </div>
 
     <!-- 1. 新增備忘區塊 -->
-    <section id="memoSection" class="app-section">
-      <div class="content-card">
-        <div class="panel-header">
+    <div id="memoSection" class="app-section" style="display: none;">
+      <div class="card">
+        <div class="card-header">
           <button class="btn-back">⬅️ 返回首頁</button>
-          <span class="panel-title" style="margin-left: 10px;">新增業務備忘</span>
+          <span style="font-weight: bold; margin-left: 10px;">新增業務備忘</span>
         </div>
         <div class="form-group" style="margin-top: 15px;">
           <label>分類</label>
@@ -87,14 +86,14 @@
         </div>
         <button id="saveMemoBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">儲存備忘</button>
       </div>
-    </section>
+    </div>
 
     <!-- 2. 新增待辦區塊 -->
-    <section id="taskSection" class="app-section">
-      <div class="content-card">
-        <div class="panel-header">
+    <div id="taskSection" class="app-section" style="display: none;">
+      <div class="card">
+        <div class="card-header">
           <button class="btn-back">⬅️ 返回首頁</button>
-          <span class="panel-title" style="margin-left: 10px;">新增消防待辦事項</span>
+          <span style="font-weight: bold; margin-left: 10px;">新增消防待辦事項</span>
         </div>
         <div class="form-group" style="margin-top: 15px;">
           <label>待辦事項主旨</label>
@@ -110,14 +109,14 @@
         </div>
         <button id="saveTaskBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">建立待辦</button>
       </div>
-    </section>
+    </div>
 
     <!-- 3. 搜尋日誌區塊 -->
-    <section id="searchSection" class="app-section">
-      <div class="content-card">
-        <div class="panel-header">
+    <div id="searchSection" class="app-section" style="display: none;">
+      <div class="card">
+        <div class="card-header">
           <button class="btn-back">⬅️ 返回首頁</button>
-          <span class="panel-title" style="margin-left: 10px;">歷史日誌搜尋</span>
+          <span style="font-weight: bold; margin-left: 10px;">歷史日誌搜尋</span>
         </div>
         <div style="display: flex; gap: 8px; margin-top: 15px;">
           <input type="text" id="searchKeyword" class="form-control" style="flex: 1;" placeholder="輸入關鍵字 (如：耗材、OHCA...)">
@@ -130,21 +129,9 @@
         </div>
         <div id="searchResults" style="margin-top: 20px;"></div>
       </div>
-    </section>
+    </div>
   </div>
 
-  <!-- 主邏輯 ES Module 載入 -->
   <script type="module" src="js/app.js"></script>
-
-  <!-- Service Worker 離線快取註冊 -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('SW 註冊成功:', reg.scope))
-          .catch(err => console.error('SW 註冊失敗:', err));
-      });
-    }
-  </script>
 </body>
 </html>
