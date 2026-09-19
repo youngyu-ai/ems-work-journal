@@ -1,5 +1,4 @@
-import { openFollowupModal, openEditModal, deleteHistory } from './app.js';
-
+// 渲染待辦事項清單
 export function renderTasks(tasks) {
   const container = document.getElementById('taskList');
   if (!container) return;
@@ -19,6 +18,7 @@ export function renderTasks(tasks) {
   `).join('');
 }
 
+// 渲染歷史日誌搜尋結果
 export function renderSearchResults(results, container) {
   if (!results || results.length === 0) {
     container.innerHTML = '<div style="color:#666; text-align:center; padding:16px;">查無符合條件之紀錄</div>';
@@ -41,7 +41,12 @@ export function renderSearchResults(results, container) {
   }).join('');
 }
 
+// 跳脫 HTML 字元，防止 XSS 注入
 export function escapeHtml(value) {
   return String(value == null ? '' : value)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
