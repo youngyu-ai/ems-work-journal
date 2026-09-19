@@ -1,26 +1,22 @@
-// 渲染待辦事項清單
+// 渲染待辦事項清單 (徹底防呆：相容 array、物件包裝、空值)
 export function renderTasks(tasks) {
   const container = document.getElementById('taskList');
   if (!container) return;
 
-  // 防呆處理：相容 { success: true, data: [...] } 或直接傳入 array
-  let taskArray = tasks;
-  if (tasks && typeof tasks === 'object' && !Array.isArray(tasks)) {
-    if (Array.isArray(tasks.data)) {
-      taskArray = tasks.data;
-    } else if (Array.isArray(tasks.items)) {
-      taskArray = tasks.items;
-    } else {
-      taskArray = [];
-    }
+  let list = [];
+  if (Array.isArray(tasks)) {
+    list = tasks;
+  } else if (tasks && typeof tasks === 'object') {
+    if (Array.isArray(tasks.data)) list = tasks.data;
+    else if (Array.isArray(tasks.items)) list = tasks.items;
   }
 
-  if (!taskArray || !Array.isArray(taskArray) || taskArray.length === 0) {
+  if (list.length === 0) {
     container.innerHTML = '<div style="color:#666; font-size:14px; text-align:center; padding:10px;">🎉 目前無未完成的消防待辦事項</div>';
     return;
   }
 
-  container.innerHTML = taskArray.map(t => `
+  container.innerHTML = list.map(t => `
     <div class="task-item" id="task-${t.id}">
       <input type="checkbox" class="task-checkbox" onchange="window.completeTask('${t.id}')">
       <div class="task-content">
@@ -32,21 +28,23 @@ export function renderTasks(tasks) {
   `).join('');
 }
 
-// 渲染歷史日誌搜尋結果
+// 渲染日誌搜尋結果
 export function renderSearchResults(results, container) {
   if (!container) return;
 
-  let resultArray = results;
-  if (results && typeof results === 'object' && !Array.isArray(results)) {
-    resultArray = Array.isArray(results.data) ? results.data : [];
+  let list = [];
+  if (Array.isArray(results)) {
+    list = results;
+  } else if (results && typeof results === 'object' && Array.isArray(results.data)) {
+    list = results.data;
   }
 
-  if (!resultArray || !Array.isArray(resultArray) || resultArray.length === 0) {
+  if (list.length === 0) {
     container.innerHTML = '<div style="color:#666; text-align:center; padding:16px;">查無符合條件之紀錄</div>';
     return;
   }
 
-  container.innerHTML = resultArray.map((r, idx) => {
+  container.innerHTML = list.map((r, idx) => {
     const textHtml = (r.lines || []).map(l => `<div>${escapeHtml(l)}</div>`).join('');
     const linksHtml = (r.links && r.links.length > 0)
       ? '<div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">' +
@@ -71,7 +69,7 @@ export function setNetworkStatus(status, text) {
   badge.textContent = text || (status === 'online' ? '🟢 連線正常' : '🟡 離線模式');
 }
 
-// 跳脫 HTML 字元
+// 跳脫 HTML 字元防 XSS
 export function escapeHtml(value) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;')
