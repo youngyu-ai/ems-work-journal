@@ -1,6 +1,6 @@
 import { getTasksGAS, callGasApi } from './api.js';
 import { renderTasks, setNetworkStatus } from './ui.js';
-import { getPendingSyncCount, addOfflineDraft } from './db.js';
+import { getPendingSyncCount } from './db.js';
 import { executeSearch } from './search.js';
 
 // 初始化
@@ -10,29 +10,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadTaskList();
 });
 
-// 頁面導航切換
+// 切換分頁邏輯
+function showSection(sectionId) {
+  const sections = ['homeSection', 'memoSection', 'taskSection', 'searchSection'];
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = (id === sectionId) ? 'block' : 'none';
+    }
+  });
+}
+
+// 綁定所有點擊事件
 function setupNavigation() {
-  const navBtns = document.querySelectorAll('.nav-card');
-  const sections = document.querySelectorAll('.app-section');
+  document.getElementById('btnGoMemo')?.addEventListener('click', () => showSection('memoSection'));
+  document.getElementById('btnGoTask')?.addEventListener('click', () => showSection('taskSection'));
+  document.getElementById('btnGoSearch')?.addEventListener('click', () => showSection('searchSection'));
 
-  navBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const targetId = btn.getAttribute('data-target');
-      sections.forEach(s => s.classList.remove('active'));
-      const targetSection = document.getElementById(targetId);
-      if (targetSection) targetSection.classList.add('active');
-    });
+  // 所有返回按鈕
+  document.querySelectorAll('.btn-back').forEach(btn => {
+    btn.addEventListener('click', () => showSection('homeSection'));
   });
 
-  const backBtns = document.querySelectorAll('.btn-back');
-  backBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      sections.forEach(s => s.classList.remove('active'));
-      document.getElementById('homeSection')?.classList.add('active');
-    });
-  });
-
-  // 重新整理待辦按鈕
+  // 待辦重新整理按鈕
   document.getElementById('refreshTasksBtn')?.addEventListener('click', () => {
     loadTaskList(true);
   });
@@ -51,7 +51,7 @@ async function loadTaskList(force = false) {
   if (!container) return;
 
   if (force) {
-    container.innerHTML = '<div style="color:#666; text-align:center; padding:10px;">🔄 正在同步待辦事項...</div>';
+    container.innerHTML = '<div style="color:#666; text-align:center; padding:12px;">🔄 正在同步「消防」待辦...</div>';
   }
 
   try {
@@ -60,10 +60,10 @@ async function loadTaskList(force = false) {
       renderTasks(res.data);
       setNetworkStatus('online', '🟢 連線正常');
     } else {
-      container.innerHTML = `<div style="color:#c53030; text-align:center; padding:10px;">載入待辦失敗：${res ? res.error : ''}</div>`;
+      container.innerHTML = `<div style="color:#c53030; text-align:center; padding:12px;">載入待辦失敗：${res ? res.error : ''}</div>`;
     }
   } catch (err) {
-    container.innerHTML = `<div style="color:#c53030; text-align:center; padding:10px;">載入待辦失敗：${err.message || '連線逾時'}</div>`;
+    container.innerHTML = `<div style="color:#c53030; text-align:center; padding:12px;">載入待辦失敗：${err.message || '連線逾時'}</div>`;
     setNetworkStatus('offline', '🟡 離線模式');
   }
 }
@@ -80,7 +80,7 @@ async function setupSyncBadge() {
   } catch (e) {}
 }
 
-// 全域掛載供 HTML 點擊事件調用
+// 完成待辦全域函式
 window.completeTask = async function(taskId) {
   if (!confirm('確定已完成此項待辦事項？')) return;
   const taskEl = document.getElementById(`task-${taskId}`);
@@ -92,19 +92,5 @@ window.completeTask = async function(taskId) {
   } else {
     alert('標記失敗：' + (res.error || '請檢查網路'));
     if (taskEl) taskEl.style.opacity = '1';
-  }
-};
-
-window.openFollowupModal = function(idx) {
-  alert(`準備追加第 ${idx + 1} 筆紀錄之後續處理`);
-};
-
-window.openEditModal = function(idx) {
-  alert(`準備編輯第 ${idx + 1} 筆紀錄內容`);
-};
-
-window.deleteHistory = async function(idx) {
-  if (confirm(`確定要刪除第 ${idx + 1} 筆歷史日誌嗎？此動作無法復原！`)) {
-    alert('正在刪除...');
   }
 };
