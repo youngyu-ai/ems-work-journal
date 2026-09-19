@@ -37,20 +37,30 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// 頁面路由切換（首頁 ➔ 各分頁）
+// 頁面路由切換（同步綁定至 window 確保全域可用）
 window.showSection = function(type) {
-  document.getElementById('homeView').style.display = 'none';
-  document.getElementById('section-memo').style.display = type === 'memo' ? 'block' : 'none';
-  document.getElementById('section-task').style.display = type === 'task' ? 'block' : 'none';
-  document.getElementById('section-search').style.display = type === 'search' ? 'block' : 'none';
+  const home = document.getElementById('homeView');
+  const memo = document.getElementById('section-memo');
+  const task = document.getElementById('section-task');
+  const search = document.getElementById('section-search');
+  if (home) home.style.display = 'none';
+  if (memo) memo.style.display = type === 'memo' ? 'block' : 'none';
+  if (task) task.style.display = type === 'task' ? 'block' : 'none';
+  if (search) search.style.display = type === 'search' ? 'block' : 'none';
+  window.scrollTo(0, 0);
 };
 
 window.goHome = function() {
-  document.getElementById('homeView').style.display = 'block';
-  document.getElementById('section-memo').style.display = 'none';
-  document.getElementById('section-task').style.display = 'none';
-  document.getElementById('section-search').style.display = 'none';
+  const home = document.getElementById('homeView');
+  const memo = document.getElementById('section-memo');
+  const task = document.getElementById('section-task');
+  const search = document.getElementById('section-search');
+  if (home) home.style.display = 'block';
+  if (memo) memo.style.display = 'none';
+  if (task) task.style.display = 'none';
+  if (search) search.style.display = 'none';
   loadTasks();
+  window.scrollTo(0, 0);
 };
 
 // 標籤點選事件
