@@ -248,8 +248,7 @@
   </div>
 
   <script>
-    // ==================== 設定區 ====================
-    // ⚠️ 請填入您的真實 GAS 網址 (以 /exec 結尾)
+    // 綁定您提供的正式 GAS 網址
     const GAS_URL = "https://script.google.com/macros/s/AKfycbx5tizEgp6f_7Rmx6jzorkDYddm-KwahOrjUNhwrDtN9Loq3ylnodUlV6cdMhneCVtw9Q/exec";
 
     // 頁面切換
@@ -260,21 +259,30 @@
       });
     }
 
-    // 載入待辦事項清單
+    // SWR 極速載入待辦清單：本地快取 0 秒立現 + 背景同步
     async function loadTasks(force = false) {
       const box = document.getElementById('taskBox');
       const badge = document.getElementById('statusBadge');
       
-      // 先抓快取秒開
+      // 1. 本地快取秒開
       const cached = localStorage.getItem('fire_tasks_cache');
-      if (cached && !force) {
-        try { renderTaskList(JSON.parse(cached)); } catch(e){}
+      if (cached) {
+        try {
+          const cachedItems = JSON.parse(cached);
+          if (cachedItems && cachedItems.length > 0) {
+            renderTaskList(cachedItems);
+          }
+        } catch(e) {}
+      } else if (force) {
+        box.innerHTML = '<div style="text-align:center; color:#888; padding:15px;">⏳ 正在連線讀取「消防」待辦...</div>';
       }
 
-      if (force) box.innerHTML = '<div style="text-align:center; color:#888; padding:15px;">🔄 正在連線同步...</div>';
-
+      // 2. 向 GAS 抓取最新資料
       try {
-        const res = await fetch(`${GAS_URL}?action=getTasks`, { method: 'GET', redirect: 'follow' });
+        const res = await fetch(`${GAS_URL}?action=getTasks&_t=${Date.now()}`, { 
+          method: 'GET', 
+          redirect: 'follow' 
+        });
         const json = await res.json();
         if (json && json.success) {
           renderTaskList(json.data);
@@ -282,16 +290,16 @@
           badge.textContent = "🟢 連線正常";
           badge.className = "badge";
         } else {
-          box.innerHTML = `<div style="color:#c53030; text-align:center; padding:10px;">讀取失敗：${json.error || '未知錯誤'}</div>`;
+          if (!cached) box.innerHTML = `<div style="color:#c53030; text-align:center; padding:10px;">讀取失敗：${json.error || '後端錯誤'}</div>`;
         }
       } catch (err) {
         badge.textContent = "🟡 離線模式";
         badge.className = "badge offline";
-        if (!cached) box.innerHTML = '<div style="color:#c53030; text-align:center; padding:10px;">網路連線逾時，請重整重試</div>';
+        if (!cached) box.innerHTML = '<div style="color:#c53030; text-align:center; padding:10px;">連線異常，請重新整理重試</div>';
       }
     }
 
-    // 渲染待辦
+    // 渲染待辦列表
     function renderTaskList(items) {
       const box = document.getElementById('taskBox');
       if (!items || items.length === 0) {
@@ -330,7 +338,7 @@
           if (el) el.style.opacity = '1';
         }
       } catch (e) {
-        alert('網路錯誤');
+        alert('網路連線逾時');
         if (el) el.style.opacity = '1';
       }
     }
@@ -441,7 +449,7 @@
       return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // 進入網頁自動讀取消防待辦
+    // 網頁載入時自動讀取待辦
     window.addEventListener('DOMContentLoaded', () => loadTasks());
   </script>
 </body>
