@@ -1,8 +1,16 @@
 import { searchJournalGAS } from './api.js';
-import { getCachedSearchResults, setCachedSearchResults } from './db.js';
-import { renderSearchResults, setNetworkStatus } from './ui.js';
+import { renderSearchResults } from './ui.js';
 
-export async function executeSearch(keyword, targetField) {
+// 更新連線狀態顯示
+function updateStatus(status, text) {
+  const badge = document.getElementById('networkBadge');
+  if (!badge) return;
+  badge.className = `status-badge ${status}`;
+  badge.textContent = text || (status === 'online' ? '🟢 連線正常' : '🟡 離線模式');
+}
+
+// 搜尋執行主入口
+export async function executeSearch(keyword, targetField = 'both') {
   const container = document.getElementById('searchResults');
   if (!container) return;
 
@@ -11,32 +19,38 @@ export async function executeSearch(keyword, targetField) {
     return;
   }
 
-  const queryKey = `${targetField}:${keyword.trim()}`;
+  const queryKey = `ems_search_${targetField}_${keyword.trim()}`;
 
-  // 1. SWR 策略：先嘗試讀取本地快取秒開
-  try {
-    const cached = await getCachedSearchResults(queryKey);
-    if (cached && cached.results && cached.results.length > 0) {
-      renderSearchResults(cached.results, container);
-      setNetworkStatus('online', '⚡ 顯示快取中，正在背景同步...');
-    } else {
-      container.innerHTML = '<div style="color:#666; text-align:center; padding:16px;">🔍 正在連線搜尋中...</div>';
-    }
-  } catch (e) {
+  // 1. 本地快取秒開
+  const cached = localStorage.getItem(queryKey);
+  if (cached) {
+    try {
+      const parsedData = JSON.parse(cached);
+      if (parsedData && parsedData.length > 0) {
+        renderSearchResults(parsedData, container);
+        updateStatus('online', '⚡ 顯示本機快取中，正在背景同步...');
+      }
+    } catch (e) {}
+  } else {
     container.innerHTML = '<div style="color:#666; text-align:center; padding:16px;">🔍 正在連線搜尋中...</div>';
   }
 
-  // 2. 向 GAS 發送查詢
+  // 2. 向後端 GAS 請求搜尋
   try {
     const res = await searchJournalGAS(keyword.trim(), targetField);
     if (res && res.success && res.data) {
       renderSearchResults(res.data, container);
-      await setCachedSearchResults(queryKey, res.data);
-      setNetworkStatus('online', '🟢 連線正常');
+      localStorage.setItem(queryKey, JSON.stringify(res.data));
+      updateStatus('online', '🟢 連線正常');
     } else {
-      container.innerHTML = `<div style="color:#c53030; text-align:center; padding:16px;">搜尋失敗：${res ? res.error : '查無資料'}</div>`;
+      if (!cached) {
+        container.innerHTML = `<div style="color:#c53030; text-align:center; padding:16px;">搜尋失敗：${res ? res.error : '查無資料'}</div>`;
+      }
     }
   } catch (err) {
-    setNetworkStatus('offline', '🟡 離線模式 (僅顯示快取)');
+    updateStatus('offline', '🟡 離線模式 (僅顯示快取)');
   }
 }
+
+// 相容 app.js 的即時搜尋匯出名稱
+export const performInstantSearch = executeSearch;
