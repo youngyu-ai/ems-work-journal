@@ -4,7 +4,6 @@ const DB_VERSION = 1;
 
 let dbInstance = null;
 
-// 開啟並初始化 IndexedDB
 export function openDB() {
   return new Promise((resolve, reject) => {
     if (dbInstance) {
@@ -15,11 +14,9 @@ export function openDB() {
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
-      // 離線待同步草稿箱
       if (!db.objectStoreNames.contains('offline_queue')) {
         db.createObjectStore('offline_queue', { keyPath: 'id', autoIncrement: true });
       }
-      // SWR 搜尋結果本機快取
       if (!db.objectStoreNames.contains('search_cache')) {
         db.createObjectStore('search_cache', { keyPath: 'query' });
       }
@@ -36,7 +33,7 @@ export function openDB() {
   });
 }
 
-// 取得離線待同步草稿數量 (供 app.js 檢查同步徽章使用)
+// 供 app.js 查詢待同步數量
 export async function getPendingSyncCount() {
   try {
     const db = await openDB();
@@ -68,7 +65,7 @@ export async function getCachedSearchResults(queryKey) {
   }
 }
 
-// 儲存搜尋結果至快取 (附帶時間戳記)
+// 儲存搜尋快取
 export async function setCachedSearchResults(queryKey, results) {
   try {
     const db = await openDB();
@@ -88,7 +85,7 @@ export async function setCachedSearchResults(queryKey, results) {
   }
 }
 
-// 離線草稿：加入待同步佇列
+// 離線草稿箱：新增
 export async function addOfflineDraft(data) {
   try {
     const db = await openDB();
@@ -107,7 +104,7 @@ export async function addOfflineDraft(data) {
   }
 }
 
-// 離線草稿：取得全部待同步項目
+// 離線草稿箱：列出
 export async function getOfflineDrafts() {
   try {
     const db = await openDB();
@@ -123,7 +120,7 @@ export async function getOfflineDrafts() {
   }
 }
 
-// 離線草稿：刪除已同步項目
+// 離線草稿箱：刪除
 export async function removeOfflineDraft(id) {
   try {
     const db = await openDB();
