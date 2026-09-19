@@ -1,74 +1,65 @@
 // 請替換為您的真實 GAS 部署網址
 const GAS_API_ENDPOINT = "https://script.google.com/macros/s/AKfycbx5tizEgp6f_7Rmx6jzorkDYddm-KwahOrjUNhwrDtN9Loq3ylnodUlV6cdMhneCVtw9Q/exec";
 
-// 封裝具有容錯與合理逾時的 fetch
-async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+// 封裝通用 API 呼叫函式 (供 app.js 調用)
+export async function callGasApi(action, data = {}) {
   try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal
+    const payload = { action, ...data };
+    const response = await fetch(GAS_API_ENDPOINT, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(payload)
     });
-    clearTimeout(id);
-    return response;
+    return await response.json();
   } catch (err) {
-    clearTimeout(id);
-    throw err;
+    console.error("GAS API 呼叫失敗:", err);
+    return { success: false, error: err.toString() };
   }
 }
 
-// 取得待辦事項：支援 SWR (Stale-While-Revalidate) 快取
+// 取得待辦事項清單 (支援本機快取秒開)
 export async function getTasksGAS() {
   const CACHE_KEY = 'ems_cached_tasks';
-  
-  // 1. 如果本地有舊快取，先回傳快取給畫面「秒顯」
   const localCached = localStorage.getItem(CACHE_KEY);
   let cachedData = null;
   if (localCached) {
-    try {
-      cachedData = JSON.parse(localCached);
-    } catch (e) {}
+    try { cachedData = JSON.parse(localCached); } catch (e) {}
   }
 
-  // 2. 向 GAS 請求最新資料（逾時放寬至 20 秒，容納 GAS 冷啟動）
   try {
-    const res = await fetchWithTimeout(`${GAS_API_ENDPOINT}?action=getTasks`, {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 20000); // 20 秒逾時
+    const res = await fetch(`${GAS_API_ENDPOINT}?action=getTasks`, {
       method: 'GET',
-      mode: 'cors'
-    }, 20000);
-    
+      mode: 'cors',
+      signal: controller.signal
+    });
+    clearTimeout(id);
     const result = await res.json();
     if (result && result.success) {
-      // 存入快取
       localStorage.setItem(CACHE_KEY, JSON.stringify(result.data));
-      return { success: true, data: result.data, fromCache: false };
+      return { success: true, data: result.data };
     }
   } catch (err) {
-    // 網路太慢或失敗時，若有快取就優雅降級
     if (cachedData) {
       return { success: true, data: cachedData, fromCache: true };
     }
-    throw new Error('Google Tasks 連線逾時，請稍後點擊重新整理');
+    throw err;
   }
-
-  return { success: true, data: cachedData || [], fromCache: true };
+  return { success: true, data: cachedData || [] };
 }
 
-// 搜尋日誌
+// 歷史日誌搜尋
 export async function searchJournalGAS(keyword, targetField = 'both') {
   const url = `${GAS_API_ENDPOINT}?action=search&keyword=${encodeURIComponent(keyword)}&targetField=${encodeURIComponent(targetField)}`;
-  const res = await fetchWithTimeout(url, { method: 'GET', mode: 'cors' }, 25000);
+  const res = await fetch(url, { method: 'GET', mode: 'cors' });
   return await res.json();
 }
 
-// 送出新增/編輯等操作 (POST)
+// POST 請求輔助函式
 export async function postToGAS(payload) {
-  const res = await fetch(GAS_API_ENDPOINT, {
-    method: 'POST',
-    mode: 'no-cors', // 避免 GAS 重定向跨域問題
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  return { success: true };
+  return await callGasApi(payload.action, payload);
 }
