@@ -1,111 +1,124 @@
-const DB_NAME = 'EMS_Offline_DB_V3';
+// IndexedDB 資料庫管理模組
+const DB_NAME = 'EMS_Journal_DB';
 const DB_VERSION = 1;
 
-const STORES = {
-  SEARCH_CACHE: 'search_cache',       // 搜尋快取 (SWR 立即顯示)
-  OFFLINE_DRAFTS: 'offline_drafts',   // 斷線時暫存的勤務紀錄草稿
-  SYNC_QUEUE: 'sync_queue',           // 待上傳/同步任務佇列
-  META: 'meta'                        // 本機統計與設定
-};
+let dbInstance = null;
 
+// 開啟並初始化 IndexedDB
 export function openDB() {
   return new Promise((resolve, reject) => {
+    if (dbInstance) {
+      resolve(dbInstance);
+      return;
+    }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
-
-      if (!db.objectStoreNames.contains(STORES.SEARCH_CACHE)) {
-        db.createObjectStore(STORES.SEARCH_CACHE, { keyPath: 'queryKey' });
+      // 離線待同步草稿箱
+      if (!db.objectStoreNames.contains('offline_queue')) {
+        db.createObjectStore('offline_queue', { keyPath: 'id', autoIncrement: true });
       }
-
-      if (!db.objectStoreNames.contains(STORES.OFFLINE_DRAFTS)) {
-        db.createObjectStore(STORES.OFFLINE_DRAFTS, { keyPath: 'draftId' });
-      }
-
-      if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
-        const queueStore = db.createObjectStore(STORES.SYNC_QUEUE, { keyPath: 'id', autoIncrement: true });
-        queueStore.createIndex('status', 'status', { unique: false });
-      }
-
-      if (!db.objectStoreNames.contains(STORES.META)) {
-        db.createObjectStore(STORES.META, { keyPath: 'key' });
+      // SWR 搜尋結果本機快取
+      if (!db.objectStoreNames.contains('search_cache')) {
+        db.createObjectStore('search_cache', { keyPath: 'query' });
       }
     };
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onsuccess = (event) => {
+      dbInstance = event.target.result;
+      resolve(dbInstance);
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
   });
 }
 
-export async function getLocalSearchCache(queryKey) {
+// 取得搜尋快取
+export async function getCachedSearchResults(queryKey) {
   try {
     const db = await openDB();
-    return await new Promise((resolve) => {
-      const tx = db.transaction(STORES.SEARCH_CACHE, 'readonly');
-      const req = tx.objectStore(STORES.SEARCH_CACHE).get(queryKey);
-      req.onsuccess = () => resolve(req.result ? req.result.data : null);
+    return new Promise((resolve) => {
+      const tx = db.transaction('search_cache', 'readonly');
+      const store = tx.objectStore('search_cache');
+      const req = store.get(queryKey);
+      req.onsuccess = () => resolve(req.result || null);
       req.onerror = () => resolve(null);
     });
-  } catch (e) {
+  } catch (err) {
     return null;
   }
 }
 
-export async function setLocalSearchCache(queryKey, data) {
+// 儲存搜尋結果至快取 (附帶時間戳記)
+export async function setCachedSearchResults(queryKey, results) {
   try {
     const db = await openDB();
-    return await new Promise((resolve) => {
-      const tx = db.transaction(STORES.SEARCH_CACHE, 'readwrite');
-      tx.objectStore(STORES.SEARCH_CACHE).put({
-        queryKey,
-        data,
+    return new Promise((resolve) => {
+      const tx = db.transaction('search_cache', 'readwrite');
+      const store = tx.objectStore('search_cache');
+      store.put({
+        query: queryKey,
+        results: results,
         updatedAt: Date.now()
       });
       tx.oncomplete = () => resolve(true);
       tx.onerror = () => resolve(false);
     });
-  } catch (e) {
+  } catch (err) {
     return false;
   }
 }
 
-export async function saveOfflineDraft(draftData) {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction([STORES.OFFLINE_DRAFTS, STORES.SYNC_QUEUE], 'readwrite');
-    const draftId = 'draft_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    
-    tx.objectStore(STORES.OFFLINE_DRAFTS).put({
-      draftId,
-      ...draftData,
-      createdAt: new Date().toISOString()
-    });
-
-    tx.objectStore(STORES.SYNC_QUEUE).add({
-      type: 'CREATE_MEMO',
-      draftId,
-      payload: draftData,
-      status: 'pending',
-      retryCount: 0,
-      createdAt: Date.now()
-    });
-
-    tx.oncomplete = () => resolve(draftId);
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-export async function getPendingSyncCount() {
+// 離線草稿：加入待同步佇列
+export async function addOfflineDraft(data) {
   try {
     const db = await openDB();
-    return await new Promise((resolve) => {
-      const tx = db.transaction(STORES.SYNC_QUEUE, 'readonly');
-      const req = tx.objectStore(STORES.SYNC_QUEUE).count();
-      req.onsuccess = () => resolve(req.result || 0);
-      req.onerror = () => resolve(0);
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('offline_queue', 'readwrite');
+      const store = tx.objectStore('offline_queue');
+      const req = store.add({
+        ...data,
+        createdAt: Date.now()
+      });
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = (e) => reject(e.target.error);
     });
-  } catch (e) {
-    return 0;
+  } catch (err) {
+    throw err;
+  }
+}
+
+// 離線草稿：取得全部待同步項目
+export async function getOfflineDrafts() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction('offline_queue', 'readonly');
+      const store = tx.objectStore('offline_queue');
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => resolve([]);
+    });
+  } catch (err) {
+    return [];
+  }
+}
+
+// 離線草稿：刪除已同步項目
+export async function removeOfflineDraft(id) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction('offline_queue', 'readwrite');
+      const store = tx.objectStore('offline_queue');
+      const req = store.delete(id);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => resolve(false);
+    });
+  } catch (err) {
+    return false;
   }
 }
