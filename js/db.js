@@ -36,6 +36,22 @@ export function openDB() {
   });
 }
 
+// 取得離線待同步草稿數量 (供 app.js 檢查同步徽章使用)
+export async function getPendingSyncCount() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction('offline_queue', 'readonly');
+      const store = tx.objectStore('offline_queue');
+      const countReq = store.count();
+      countReq.onsuccess = () => resolve(countReq.result || 0);
+      countReq.onerror = () => resolve(0);
+    });
+  } catch (err) {
+    return 0;
+  }
+}
+
 // 取得搜尋快取
 export async function getCachedSearchResults(queryKey) {
   try {
