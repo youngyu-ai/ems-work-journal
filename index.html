@@ -1,339 +1,103 @@
-const DOC_ID = '1Sq0RfHMG_--CMUOeVyqFNkdfpQMiqQuk6mseVYb3kYU';
-const WAREHOUSE_FOLDER_ID = '1IrDHZdYBUKQIfc2ZkW2cnFaphL-QXsGD';
-const API_TOKEN = 'BALING_EMS_2026';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>救護業務日誌 PWA 3.0</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <!-- 頂端同步監控列 (消防隊專用) -->
+  <header class="app-header">
+    <div class="header-main">
+      <div class="brand">
+        <h1>救護業務日誌</h1>
+        <span class="badge-sub">EMS LOG 3.0</span>
+      </div>
+      <div class="sync-indicator" id="syncStatus">
+        <span class="status-dot online"></span>
+        <span class="status-text">連線正常</span>
+        <span class="badge-pending" id="pendingCount" style="display:none;">0 待同步</span>
+      </div>
+    </div>
+  </header>
 
-function doGet(e) {
-  return ContentService.createTextOutput(JSON.stringify({ status: 'API is running' })).setMimeType(ContentService.MimeType.JSON);
-}
+  <!-- PWA 版本更新提示橫幅 -->
+  <div id="updateBanner" class="update-banner" style="display:none;">
+    <span>✨ 系統已有新版本更新！</span>
+    <button id="btnApplyUpdate" class="btn-update">立即套用</button>
+  </div>
 
-function doPost(e) {
-  try {
-    let payload;
-    if (e.parameter && e.parameter.data) {
-      payload = JSON.parse(e.parameter.data);
-    } else if (e.postData && e.postData.contents) {
-      payload = JSON.parse(e.postData.contents);
-    } else {
-      throw new Error('未接收到有效資料');
-    }
+  <main class="container">
+    <!-- 導航選單 -->
+    <nav class="nav-grid">
+      <button class="nav-btn btn-memo active" data-target="section-memo">
+        <span class="icon">📝</span>
+        <span>新增備忘</span>
+      </button>
+      <button class="nav-btn btn-search" data-target="section-search">
+        <span class="icon">🔍</span>
+        <span>檢索日誌</span>
+      </button>
+      <button class="nav-btn btn-tasks" data-target="section-tasks">
+        <span class="icon">☑️</span>
+        <span>消防待辦</span>
+      </button>
+    </nav>
 
-    if (payload.token !== API_TOKEN) {
-      return responseJson({ success: false, message: '未授權的請求' });
-    }
+    <!-- 1. 新增備忘錄 (支援離線草稿儲存) -->
+    <section id="section-memo" class="view-panel active">
+      <form id="memoForm">
+        <label>發布日期與時間</label>
+        <input type="datetime-local" id="memoDate" required>
 
-    const action = payload.action;
-    const data = payload.data || {};
-    let result = {};
+        <label>標題</label>
+        <input type="text" id="memoTitle" placeholder="例如：到院前血氧量測作業標準" required>
 
-    if (action === 'getFireTasks') {
-      result = getFireTasks();
-    } else if (action === 'completeFireTask') {
-      result = completeFireTask(data.taskId);
-    } else if (action === 'addFireTask') {
-      result = addFireTask(data);
-    } else if (action === 'saveFileDirect') {
-      result = saveFileDirect(data);
-    } else if (action === 'saveFileChunk') {
-      result = saveFileChunk(data);
-    } else if (action === 'saveMemoDoc') {
-      result = saveMemoDoc(data);
-    } else if (action === 'searchHistory') {
-      result = searchHistory(data);
-    } else if (action === 'appendFollowUpToHistory') {
-      result = appendFollowUpToHistory(data);
-    } else {
-      result = { success: false, message: '未知的動作' };
-    }
-    return responseJson(result);
-  } catch (error) {
-    return responseJson({ success: false, message: '後端發生異常：' + error.toString() });
-  }
-}
+        <label>常用快捷標籤</label>
+        <div class="tag-list" id="tagList">
+          <button type="button" class="tag-chip">器材</button>
+          <button type="button" class="tag-chip">耗材</button>
+          <button type="button" class="tag-chip">公文</button>
+          <button type="button" class="tag-chip">SOP</button>
+          <button type="button" class="tag-chip">案例教育</button>
+        </div>
 
-function responseJson(data) {
-  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
-}
+        <label>內容說明</label>
+        <textarea id="memoContent" rows="4" placeholder="詳細說明勤務或交辦內容..."></textarea>
 
-/* =======================================
-   下方為完整業務邏輯函式，請勿刪減
-   ======================================= */
+        <label>附加檔案 (按需載入上傳引擎)</label>
+        <div class="file-drop-zone" id="dropZone">
+          <input type="file" id="fileInput" multiple style="display:none;">
+          <button type="button" class="btn-add-file" id="btnPickFile">📎 選擇相片、PDF、簡報</button>
+          <div id="selectedFileList" class="selected-file-list"></div>
+        </div>
 
-function getFireTaskListId() {
-  const taskLists = Tasks.Tasklists.list();
-  if (taskLists && taskLists.items) {
-    for (let i = 0; i < taskLists.items.length; i++) {
-      if (taskLists.items[i].title === '消防') return taskLists.items[i].id;
-    }
-  }
-  return Tasks.Tasklists.insert({ title: '消防' }).id;
-}
+        <button type="submit" class="btn-primary-action" id="btnSubmitMemo">儲存並同步至雲端</button>
+      </form>
+    </section>
 
-function getFireTasks() {
-  try {
-    const listId = getFireTaskListId();
-    const result = Tasks.Tasks.list(listId, { showCompleted: false, showHidden: false });
-    const tasks = result.items || [];
-    return tasks.map(function(t) {
-      return { id: t.id, title: t.title || '無標題', notes: t.notes || '', due: t.due ? Utilities.formatDate(new Date(t.due), "GMT+8", "yyyy/MM/dd") : '' };
-    });
-  } catch (e) {
-    throw new Error('讀取待辦失敗(請確認已於左側服務新增 Tasks API)：' + e.message);
-  }
-}
+    <!-- 2. SWR 搜尋面板 -->
+    <section id="section-search" class="view-panel">
+      <div class="search-filter-box">
+        <input type="text" id="searchKeyword" placeholder="輸入關鍵字或標籤 (如：#公文)">
+        <div class="date-range-row">
+          <input type="date" id="searchStartDate">
+          <input type="date" id="searchEndDate">
+        </div>
+        <button type="button" class="btn-search-action" id="btnExecuteSearch">開始查詢 (SWR 即時讀取)</button>
+      </div>
+      <div id="searchResultList" class="search-results-container"></div>
+    </section>
 
-function completeFireTask(taskId) {
-  try {
-    const listId = getFireTaskListId();
-    Tasks.Tasks.patch({ status: 'completed' }, listId, taskId);
-    return { success: true };
-  } catch (e) { throw new Error(e.message); }
-}
+    <!-- 3. 待辦清單面板 -->
+    <section id="section-tasks" class="view-panel">
+      <div id="taskListContainer" class="task-list">載入中...</div>
+    </section>
+  </main>
 
-function addFireTask(data) {
-  try {
-    const listId = getFireTaskListId();
-    Tasks.Tasks.insert({ title: data.title, notes: data.notes || '', due: data.due ? new Date(data.due).toISOString() : null }, listId);
-    return { success: true, message: '待辦事項已同步至 Google Tasks (消防)！' };
-  } catch (e) { return { success: false, message: '新增失敗：' + e.toString() }; }
-}
-
-function getOrCreateYearFolder(year) {
-  const warehouseFolder = DriveApp.getFolderById(WAREHOUSE_FOLDER_ID);
-  const subFolders = warehouseFolder.getFoldersByName(String(year));
-  if (subFolders.hasNext()) return subFolders.next();
-  return warehouseFolder.createFolder(String(year));
-}
-
-function extractDateString(text) {
-  if (!text) return '';
-  const value = String(text);
-  const m1 = value.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if (m1) return m1[1] + '-' + ('0' + m1[2]).slice(-2) + '-' + ('0' + m1[3]).slice(-2);
-  const m2 = value.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-  if (m2) return m2[1] + '-' + ('0' + m2[2]).slice(-2) + '-' + ('0' + m2[3]).slice(-2);
-  return '';
-}
-
-function normalizeSearchDate(dateText) {
-  if (!dateText) return '';
-  const value = String(dateText).trim();
-  const m = value.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-  if (!m) return '';
-  return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
-}
-
-function saveFileDirect(data) {
-  try {
-    const targetFolder = getOrCreateYearFolder(data.year);
-    let base64 = data.fileData;
-    if (base64.indexOf(',') > -1) base64 = base64.substring(base64.indexOf(',') + 1);
-    const decoded = Utilities.base64Decode(base64);
-    const isImage = data.fileType && data.fileType.startsWith('image/');
-    const isLarge = decoded.length > 7 * 1024 * 1024 || !isImage;
-    const savedName = buildUploadedFileName(data.fileName);
-    const file = targetFolder.createFile(Utilities.newBlob(decoded, data.fileType || 'application/octet-stream', savedName));
-    return { success:true, url:file.getUrl(), name:savedName, isLarge:isLarge, isImage:isImage };
-  } catch (e) { return { success:false, message:e.toString() }; }
-}
-
-function saveFileChunk(data) {
-  try {
-    const targetFolder = getOrCreateYearFolder(data.year);
-    let base64 = data.base64Chunk;
-    if (base64.indexOf(',') > -1) base64 = base64.substring(base64.indexOf(',') + 1);
-    const chunkBytes = Utilities.base64Decode(base64);
-    const chunkFileName = '_chk_' + data.uploadId + '_' + data.chunkIndex;
-    targetFolder.createFile(Utilities.newBlob(chunkBytes, 'application/octet-stream', chunkFileName));
-
-    if (data.chunkIndex === data.totalChunks - 1) {
-      const combinedBytes = [];
-      for (let i = 0; i < data.totalChunks; i++) {
-        const cName = '_chk_' + data.uploadId + '_' + i;
-        const cFiles = targetFolder.getFilesByName(cName);
-        if (!cFiles.hasNext()) throw new Error('找不到分塊檔案：' + cName);
-        const cf = cFiles.next();
-        const b = cf.getBlob().getBytes();
-        for (let k = 0; k < b.length; k++) combinedBytes.push(b[k]);
-        cf.setTrashed(true);
-      }
-      const isImage = data.fileType && data.fileType.startsWith('image/');
-      const isLarge = data.fileSize > 7 * 1024 * 1024 || !isImage;
-      const savedName = buildUploadedFileName(data.fileName);
-      const finalFile = targetFolder.createFile(Utilities.newBlob(combinedBytes, data.fileType || 'application/octet-stream', savedName));
-      return { success:true, completed:true, url:finalFile.getUrl(), name:savedName, isLarge:isLarge, isImage:isImage };
-    }
-    return { success:true, completed:false };
-  } catch (e) { return { success:false, message:e.toString() }; }
-}
-
-function sanitizeFileName(name) {
-  return String(name || '未命名檔案').replace(/[\\\/:*?"<>|]/g, '_').trim() || '未命名檔案';
-}
-
-function buildUploadedFileName(fileName) {
-  return 'Upload Date ' + Utilities.formatDate(new Date(), 'GMT+8', 'yyyyMMdd') + '_' + sanitizeFileName(fileName);
-}
-
-function parseHistoryEntries_() {
-  const doc = DocumentApp.openById(DOC_ID);
-  const body = doc.getBody();
-  const numChildren = body.getNumChildren();
-  const entries = [];
-  let currentLines = [];
-  let currentLinks = [];
-  let startIndex = -1;
-
-  function flush(separatorIndex) {
-    if (!currentLines.length) { currentLines = []; currentLinks = []; startIndex = -1; return; }
-    const fullText = currentLines.join('\n');
-    let time = '';
-    let title = '';
-    currentLines.forEach(function(line) {
-      if (line.indexOf('時間：') === 0) time = line.substring(3).trim();
-      if (line.indexOf('標題：') === 0) title = line.substring(3).trim();
-    });
-    const date = extractDateString(fullText);
-    entries.push({ lines: currentLines.slice(), links: currentLinks.slice(), date: date, time: time, title: title, startIndex: startIndex, separatorIndex: separatorIndex, entryKey: date + '|' + time + '|' + title });
-    currentLines = []; currentLinks = []; startIndex = -1;
-  }
-
-  for (let i = 0; i < numChildren; i++) {
-    const child = body.getChild(i);
-    if (child.getType() !== DocumentApp.ElementType.PARAGRAPH) continue;
-    const p = child.asParagraph();
-    const text = p.getText().trim();
-    if (text.indexOf('----------------------------------------') > -1) { flush(i); continue; }
-    if (!text) continue;
-    if (startIndex === -1) startIndex = i;
-    currentLines.push(text);
-
-    const textObj = p.editAsText();
-    const pText = p.getText();
-    for (let j = 0; j < pText.length; j++) {
-      const url = textObj.getLinkUrl(j);
-      if (!url) continue;
-      let a = j, b = j;
-      while (a > 0 && textObj.getLinkUrl(a - 1) === url) a--;
-      while (b < pText.length - 1 && textObj.getLinkUrl(b + 1) === url) b++;
-      const linkName = pText.substring(a, b + 1).replace(/^【\s*🔗\s*點擊開啟：/, '').replace(/\s*】$/, '').trim();
-      if (!currentLinks.some(function(l) { return l.url === url; })) currentLinks.push({ name: linkName || '開啟雲端檔案', url: url });
-      j = b;
-    }
-  }
-  flush(numChildren);
-  return entries;
-}
-
-function appendFollowUpToHistory(data) {
-  try {
-    if (!data || !data.title || !data.time) return { success:false, message:'缺少原始日誌參照資訊。' };
-    const followUpText = String(data.followUpText || '').trim();
-    const uploadedFiles = Array.isArray(data.uploadedFiles) ? data.uploadedFiles : [];
-    if (!followUpText && uploadedFiles.length === 0) return { success:false, message:'請填寫說明或上傳附件。' };
-
-    const targetDate = normalizeSearchDate(data.date || '');
-    const entries = parseHistoryEntries_();
-    let entry = null;
-    for (let i = 0; i < entries.length; i++) {
-      const e = entries[i];
-      if ((targetDate ? e.date === targetDate : true) && e.time === String(data.time).trim() && e.title === String(data.title).trim()) {
-        entry = e; break;
-      }
-    }
-    if (!entry) throw new Error('找不到原始日誌。請重新搜尋後再操作。');
-
-    const doc = DocumentApp.openById(DOC_ID);
-    const body = doc.getBody();
-    let insertIndex = entry.separatorIndex;
-    if (insertIndex < 0 || insertIndex > body.getNumChildren()) insertIndex = body.getNumChildren();
-
-    const modifiedTime = Utilities.formatDate(new Date(), 'GMT+8', 'yyyy/MM/dd HH:mm:ss');
-    const header = body.insertParagraph(insertIndex, '【後續處理｜追加於 ' + modifiedTime + '】');
-    header.setHeading(DocumentApp.ParagraphHeading.HEADING3);
-    insertIndex++;
-
-    if (followUpText) { body.insertParagraph(insertIndex, '後續處理說明：' + followUpText); insertIndex++; }
-    uploadedFiles.forEach(function(f) {
-      const pLink = body.insertParagraph(insertIndex, '📎 後續附件：');
-      const linkButton = pLink.appendText('【 🔗 點擊開啟：' + f.name + ' 】\n');
-      linkButton.setLinkUrl(f.url); linkButton.setForegroundColor('#1a73e8'); linkButton.setUnderline(true); linkButton.setBold(true);
-      insertIndex++;
-    });
-    body.insertParagraph(insertIndex, '修改時間：' + modifiedTime);
-    return { success:true, message:'後續處理已精準追加至原日誌位置。', modifiedTime:modifiedTime };
-  } catch (e) { return { success:false, message:'追加失敗：' + e.toString() }; }
-}
-
-function saveMemoDoc(data) {
-  try {
-    const eventDate = data.date ? new Date(data.date) : new Date();
-    const year = eventDate.getFullYear();
-    const month = eventDate.getMonth() + 1;
-    const day = eventDate.getDate();
-    const targetTabName = year + '/' + month;
-    const dateHeadingText = year + '年' + month + '月' + day + '日';
-    const timeString = Utilities.formatDate(eventDate, "GMT+8", "yyyy/MM/dd HH:mm");
-    writeMemoToDoc(DOC_ID, targetTabName, dateHeadingText, timeString, data, data.uploadedFiles);
-    return { success: true, message: '紀錄與 ' + (data.uploadedFiles || []).length + ' 個附件已儲存！' };
-  } catch (e) { return { success: false, message: '寫入文件失敗：' + e.toString() }; }
-}
-
-function writeMemoToDoc(docId, targetTabName, dateHeadingText, timeString, data, filesList) {
-  const doc = DocumentApp.openById(docId);
-  const body = doc.getBody();
-  let insertIndex = 0;
-  const paragraphs = body.getParagraphs();
-  let foundSection = false;
-
-  for (let i = 0; i < paragraphs.length; i++) {
-    const text = paragraphs[i].getText().trim();
-    if (text === '# ' + targetTabName || text === targetTabName || text.startsWith('# ' + targetTabName)) {
-      insertIndex = i + 1; foundSection = true; break;
-    }
-  }
-  if (!foundSection) {
-    const pMonth = body.insertParagraph(0, '\n# ' + targetTabName + '\n');
-    pMonth.setHeading(DocumentApp.ParagraphHeading.HEADING1);
-    insertIndex = 1;
-  }
-
-  body.insertParagraph(insertIndex, '----------------------------------------');
-  if (filesList && filesList.length > 0) {
-    for (let j = filesList.length - 1; j >= 0; j--) {
-      const f = filesList[j];
-      const pLink = body.insertParagraph(insertIndex, '📎 附件檔案：');
-      const linkButton = pLink.appendText('【 🔗 點擊開啟：' + f.name + ' 】\n');
-      linkButton.setLinkUrl(f.url); linkButton.setForegroundColor('#1a73e8'); linkButton.setUnderline(true); linkButton.setBold(true);
-    }
-  }
-  body.insertParagraph(insertIndex, '說明：' + (data.content || '無'));
-  const tagsStr = (data.tags || []).map(function(t) { return '#' + t; }).join(' ');
-  body.insertParagraph(insertIndex, '標籤：' + tagsStr);
-  body.insertParagraph(insertIndex, '標題：' + data.title);
-  body.insertParagraph(insertIndex, '時間：' + timeString);
-  body.insertParagraph(insertIndex, '\n【' + dateHeadingText + '】').setHeading(DocumentApp.ParagraphHeading.HEADING2);
-}
-
-function searchHistory(searchOptions) {
-  try {
-    let q = ''; let startDate = ''; let endDate = '';
-    if (typeof searchOptions === 'object' && searchOptions !== null) {
-      q = String(searchOptions.query || '').trim().toLowerCase();
-      if (q.indexOf('#') === 0) q = q.substring(1).trim();
-      startDate = normalizeSearchDate(searchOptions.startDate); endDate = normalizeSearchDate(searchOptions.endDate);
-    } else if (typeof searchOptions === 'string') {
-      q = searchOptions.trim().toLowerCase();
-      if (q.indexOf('#') === 0) q = q.substring(1).trim();
-    }
-    const entries = parseHistoryEntries_();
-    const matched = [];
-    entries.forEach(function(item) {
-      const lowerFull = item.lines.join('\n').toLowerCase();
-      if (q && lowerFull.indexOf(q) === -1 && !item.links.some(function(l) { return String(l.name || '').toLowerCase().indexOf(q) > -1; })) return;
-      if (startDate && (!item.date || item.date < startDate)) return;
-      if (endDate && (!item.date || item.date > endDate)) return;
-      matched.push({ lines:item.lines, links:item.links, date:item.date, time:item.time, title:item.title, entryKey:item.entryKey });
-    });
-    return matched.slice(0, 30);
-  } catch (e) { throw new Error(e.message); }
-}
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
